@@ -40,6 +40,8 @@ jobs:
 
       - name: Prepare branch & apply diffs
         run: |
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
           BR="agent/update-${{ github.run_id }}"
           git checkout -b "$BR"
 
@@ -59,10 +61,10 @@ PY
             git commit -m "feat(agent): apply diffs"
           fi
 
-          # Toujours commiter les artefacts
+          
+          # Toujours commiter les artefacts pour debug
           git add agent_artifacts.json || true
-          git commit -m "chore(agent): artifacts" || true
-
+          git commit -m "chore(agent): artifacts (audit/tests/docs note)" || true
           git push --set-upstream origin "$BR" || true
 
       - name: Create PR
@@ -70,4 +72,4 @@ PY
         run: |
           gh pr create -B main -H "agent/update-${{ github.run_id }}" \
             --title "Agent: audit + MAJ Open 2026 (auto)" \
-            --body "PR générée automatiquement par l'équipe d'agents IA."
+            --body $'Cette PR est générée par l\'équipe d\'agents.\n\n- Rapports: agent_artifacts.json\n- Diffs: diffs.json (appliqués si présents)\n\nVérifiez les changements avant merge.'

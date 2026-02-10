@@ -1,9 +1,10 @@
-import streamlit as st
 import numpy as np
 import pandas as pd
 import plotly.express as px
-from pages.Authentification import engine, User, Score
+import streamlit as st
 from sqlalchemy.orm import sessionmaker
+
+from pages.Authentification import Score, User, engine
 
 Session = sessionmaker(bind=engine)
 session = Session()
@@ -38,19 +39,21 @@ def convert_to_seconds(time_str):
 
 
 # Définition des WODs temps et répétitions
-wods_time = ["25.2", "25.3"]
-wods_rep = ["25.1"]
+wods_time = ["26.2", "26.3"]
+wods_rep = ["26.1"]
 
 # Conversion des scores
 data["Score"] = data.apply(
-    lambda row: convert_to_seconds(row["Score"])
-    if row["WOD"] in wods_time
-    else pd.to_numeric(row["Score"], errors="coerce"),
+    lambda row: (
+        convert_to_seconds(row["Score"])
+        if row["WOD"] in wods_time
+        else pd.to_numeric(row["Score"], errors="coerce")
+    ),
     axis=1,
 )
 
 st.subheader("Statistiques par WOD")
-wod_selected = st.selectbox("Choisissez un WOD", ["25.1", "25.2", "25.3"], index=0)
+wod_selected = st.selectbox("Choisissez un WOD", ["26.1", "26.2", "26.3"], index=0)
 
 subset = data[data["WOD"] == wod_selected]
 if not subset.empty:

@@ -12,7 +12,10 @@ tasks:
   - id: data_26
     desc: "Adapter l’ingestion/format pour la saison 2026"
     files:
-      - path: src/...
+      - path: pages/Classement.py
+      - path: pages/Saisie_scores.py
+      - path: pages/Statistics.py
+      - path: pages/Wods_open2025.py
         action: modify
   - id: ui_26
     desc: "Mettre à jour libellés/README pour 2026"
