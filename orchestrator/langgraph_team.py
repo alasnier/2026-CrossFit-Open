@@ -2,11 +2,13 @@
 import glob
 import json
 import os
+
+# -------- Utils shell / IO --------
 import subprocess
 import sys
 import textwrap
 import time
-from typing import Dict, List, TypedDict
+from typing import TypedDict
 
 # Nouveau SDK (google-genai, remplace google-generativeai déprécié)
 from google import genai
@@ -16,15 +18,30 @@ from google.genai import types
 from langgraph.graph import StateGraph
 
 
-# -------- Utils shell / IO --------
-def sh(cmd: str) -> str:
-    res = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-    return (res.stdout or "") + (("\n[stderr]\n" + res.stderr) if res.stderr else "")
+def sh_list(args: list[str]) -> str:
+    # Pas de shell, on capture tout et on n’échoue jamais (on renvoie stdout+stderr)
+    res = subprocess.run(args, capture_output=True, text=True)
+    out = res.stdout or ""
+    if res.stderr:
+        out += "\n[stderr]\n" + res.stderr
+    return out
+
+
+def auditor(state: State) -> Dict:
+    out = []
+    out.append(sh_list(["ruff", "check", "--fix", "."]))
+    out.append(sh_list(["bandit", "-r", ".", "-q"]))
+    # rem: safety retiré, remplacé par pip-audit côté CI (cf. YAML)
+    return {"security_report": "\n\n".join(out)}
+
+
+def tester(state: State) -> Dict:
+    return {"test_report": sh_list(["pytest", "-q"])}
 
 
 def read(path: str) -> str:
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             return f.read()
     except Exception:
         return ""
@@ -63,15 +80,11 @@ def gemini_json(client: genai.Client, prompt: str, retries: int = 1) -> dict:
             except Exception:
                 start = txt.find("{")
                 end = txt.rfind("}")
-                return (
-                    json.loads(txt[start : end + 1]) if start >= 0 and end >= 0 else {}
-                )
+                return json.loads(txt[start : end + 1]) if start >= 0 and end >= 0 else {}
         except Exception as e:
             if "429" in str(e) or "ResourceExhausted" in str(e):
                 wait = 60 * (attempt + 1)  # 60s, 120s, 180s
-                print(
-                    f"[gemini] 429 quota — attente {wait}s (tentative {attempt + 1}/{retries})"
-                )
+                print(f"[gemini] 429 quota — attente {wait}s (tentative {attempt + 1}/{retries})")
                 time.sleep(wait)
             else:
                 raise
@@ -83,7 +96,7 @@ class State(TypedDict):
     spec_path: str
     plan: dict
     security_report: str
-    diffs: List[dict]
+    diffs: list[dict]
     test_report: str
     docs_note: str
 
@@ -91,7 +104,7 @@ class State(TypedDict):
 # -------- Nœuds d'agents --------
 
 
-def plan_and_code(state: State) -> Dict:
+def plan_and_code(state: State) -> dict:
     client = init_client()  # google-genai Client
     spec = read(state["spec_path"])
     agents_rules = read("agents/AGENTS.md")
@@ -141,7 +154,7 @@ def plan_and_code(state: State) -> Dict:
     return {"plan": plan, "diffs": out.get("diffs", [])}
 
 
-def auditor(state: State) -> Dict:
+def auditor(state: State) -> dict:
     out = []
     out.append(sh("ruff check --fix ."))
     out.append(sh("bandit -r . -q || exit 0"))
@@ -149,14 +162,12 @@ def auditor(state: State) -> Dict:
     return {"security_report": "\n\n".join(out)}
 
 
-def tester(state: State) -> Dict:
+def tester(state: State) -> dict:
     return {"test_report": sh("pytest -q || exit 0")}
 
 
-def docs(state: State) -> Dict:
-    return {
-        "docs_note": "MAJ docs recommandée si de nouvelles règles/données 2026 sont ajoutées."
-    }
+def docs(state: State) -> dict:
+    return {"docs_note": "MAJ docs recommandée si de nouvelles règles/données 2026 sont ajoutées."}
 
 
 # -------- Graphe LangGraph --------

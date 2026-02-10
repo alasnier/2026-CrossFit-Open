@@ -28,7 +28,7 @@ jobs:
       - name: Install tools (qualité + LLM)
         run: |
           python -m pip install --upgrade pip
-          pip install ruff bandit safety langgraph langchain pytest google-genai
+          pip install ruff bandit langgraph langchain pytest google-genai pip-audit
 
       - name: Run orchestrator
         env:
@@ -45,6 +45,23 @@ jobs:
           path: |
             agent_artifacts.json
             diffs.json
+
+      - name: pip-audit (deps vulnérables)
+        run: |
+          if [ -f requirements.txt ]; then
+            pip-audit -r requirements.txt -f json -o pip_audit.json || true
+          else
+            pip-audit -f json -o pip_audit.json || true
+          fi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-output
+          path: |
+            agent_artifacts.json
+            diffs.json
+            pip_audit.json
 
       - name: Prepare branch & apply diffs
         run: |
