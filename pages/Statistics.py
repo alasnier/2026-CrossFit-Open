@@ -13,16 +13,12 @@ st.title("Statistiques des Scores des WODs")
 
 # Chargement des scores
 scores = (
-    session.query(
-        User.name, User.sex, User.level, User.category, Score.wod, Score.score
-    )
+    session.query(User.name, User.sex, User.level, User.category, Score.wod, Score.score)
     .join(Score, User.id == Score.user_id)
     .all()
 )
 
-data = pd.DataFrame(
-    scores, columns=["Nom", "Sexe", "Niveau", "Catégorie", "WOD", "Score"]
-)
+data = pd.DataFrame(scores, columns=["Nom", "Sexe", "Niveau", "Catégorie", "WOD", "Score"])
 
 
 def convert_to_seconds(time_str):
@@ -98,12 +94,8 @@ if not subset.empty:
         male_mean = male_scores.mean() if not male_scores.empty else 0
         female_mean = female_scores.mean() if not female_scores.empty else 0
         time_cap = 900  # Exemple : 15 minutes
-        time_cap_male = (
-            (male_scores >= time_cap).mean() * 100 if not male_scores.empty else 0
-        )
-        time_cap_female = (
-            (female_scores >= time_cap).mean() * 100 if not female_scores.empty else 0
-        )
+        time_cap_male = (male_scores >= time_cap).mean() * 100 if not male_scores.empty else 0
+        time_cap_female = (female_scores >= time_cap).mean() * 100 if not female_scores.empty else 0
 
         st.write(f"Temps moyen Hommes : {male_mean:.2f} secondes")
         st.write(f"Temps moyen Femmes : {female_mean:.2f} secondes")
@@ -119,9 +111,7 @@ if not subset.empty:
 
     # Répartition des participants par sexe et niveau
     st.subheader("Répartition des Participants par Sexe et Niveau")
-    gender_level_count = (
-        subset.groupby(["Sexe", "Niveau"]).size().reset_index(name="Nombre")
-    )
+    gender_level_count = subset.groupby(["Sexe", "Niveau"]).size().reset_index(name="Nombre")
 
     fig_level = px.bar(
         gender_level_count,
