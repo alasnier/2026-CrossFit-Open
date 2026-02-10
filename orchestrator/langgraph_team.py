@@ -35,34 +35,25 @@ def init_client() -> genai.Client:
     return genai.Client(api_key=api_key)
 
 
-def gemini_json(client: genai.Client, prompt: str, retries: int = 1) -> dict:
-    """Appelle Gemini; si 429, backoff minimal; retourne du JSON strict si possible."""
-    model = "gemini-2.0-flash-001"  # free tier / CI
+def gemini_json(client: genai.Client, prompt: str, retries: int = 2) -> dict:
+    model = "gemini-2.0-flash-001"
     config = types.GenerateContentConfig(
         temperature=0.2,
         response_mime_type="application/json",
     )
-    for attempt in range(retries):
+    # Correction : on utilise range(retries + 1) pour vraiment retenter
+    for attempt in range(retries + 1):
         try:
-            resp = client.models.generate_content(
-                model=model,
-                contents=prompt,
-                config=config,
-            )
-            txt = resp.text or "{}"
-            try:
-                return json.loads(txt)
-            except Exception:
-                start = txt.find("{")
-                end = txt.rfind("}")
-                return json.loads(txt[start : end + 1]) if start >= 0 and end >= 0 else {}
+            resp = client.models.generate_content(model=model, contents=prompt, config=config)
+            return json.loads(resp.text or "{}")
         except Exception as e:
-            if "429" in str(e) or "ResourceExhausted" in str(e):
-                wait = 60 * (attempt + 1)  # 60s seulement, puis on abandonne
-                print(f"[gemini] 429 quota — attente {wait}s (tentative {attempt + 1}/{retries})")
+            if ("429" in str(e) or "ResourceExhausted" in str(e)) and attempt < retries:
+                wait = 65  # Un peu plus de 60s pour être sûr
+                print(f"[gemini] Quota atteint, attente de {wait}s...")
                 time.sleep(wait)
             else:
-                raise
+                print(f"[gemini] Erreur fatale ou fin de tentatives : {e}")
+                break
     return {}
 
 
