@@ -1,14 +1,16 @@
-# orchestrator/langgraph_team.py (v2 LLM - Gemini)
+# orchestrator/langgraph_team.py (v3 - google-genai SDK)
 import glob
 import json
 import os
 import subprocess
 import sys
 import textwrap
+import time
 from typing import Dict, List, TypedDict
 
-# Gemini (google-generativeai)
-import google.generativeai as genai
+# Nouveau SDK (google-genai, remplace google-generativeai déprécié)
+from google import genai
+from google.genai import types
 
 # LangGraph
 from langgraph.graph import StateGraph
@@ -33,33 +35,47 @@ def write_json(path: str, data):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-# -------- LLM setup (Gemini) --------
-def init_gemini():
+# -------- LLM setup (google-genai) --------
+def init_client() -> genai.Client:
     api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
         raise RuntimeError("GOOGLE_API_KEY is not set")
-    genai.configure(api_key=api_key)
-    # modèle rapide et économique pour CI
-    return genai.GenerativeModel(
-        model_name="gemini-2.0-flash",
-        generation_config={
-            "temperature": 0.2,
-            "response_mime_type": "application/json",
-        },
+    return genai.Client(api_key=api_key)
+
+
+def gemini_json(client: genai.Client, prompt: str, retries: int = 3) -> dict:
+    """Appelle Gemini avec retry exponentiel sur 429, retourne du JSON strict."""
+    model = "gemini-1.5-flash"  # free tier : 1500 req/jour, 15 req/min
+    config = types.GenerateContentConfig(
+        temperature=0.2,
+        response_mime_type="application/json",
     )
-
-
-def gemini_json(model, prompt: str) -> dict:
-    """Appelle Gemini et parse du JSON strict (response_mime_type=application/json)."""
-    resp = model.generate_content(prompt)
-    txt = resp.text or "{}"
-    try:
-        return json.loads(txt)
-    except Exception:
-        # Dernier recours : tenter d'extraire un bloc JSON
-        start = txt.find("{")
-        end = txt.rfind("}")
-        return json.loads(txt[start : end + 1]) if start >= 0 and end >= 0 else {}
+    for attempt in range(retries):
+        try:
+            resp = client.models.generate_content(
+                model=model,
+                contents=prompt,
+                config=config,
+            )
+            txt = resp.text or "{}"
+            try:
+                return json.loads(txt)
+            except Exception:
+                start = txt.find("{")
+                end = txt.rfind("}")
+                return (
+                    json.loads(txt[start : end + 1]) if start >= 0 and end >= 0 else {}
+                )
+        except Exception as e:
+            if "429" in str(e) or "ResourceExhausted" in str(e):
+                wait = 60 * (attempt + 1)  # 60s, 120s, 180s
+                print(
+                    f"[gemini] 429 quota — attente {wait}s (tentative {attempt + 1}/{retries})"
+                )
+                time.sleep(wait)
+            else:
+                raise
+    return {}
 
 
 # -------- État partagé --------
@@ -67,14 +83,14 @@ class State(TypedDict):
     spec_path: str
     plan: dict
     security_report: str
-    diffs: List[dict]  # [{path, content_after}]
+    diffs: List[dict]
     test_report: str
     docs_note: str
 
 
 # -------- Nœuds d'agents --------
 def planner(state: State) -> Dict:
-    model = init_gemini()
+    client = init_client()
     spec = read(state["spec_path"])
     agents_rules = read("agents/AGENTS.md")
     repo_tree = "\n".join(
@@ -86,7 +102,7 @@ def planner(state: State) -> Dict:
             ][:200]
         )
     )
-    plan_schema = textwrap.dedent(
+    prompt = textwrap.dedent(
         """
     Tu es @planner. Produit un JSON strict correspondant à ce schéma:
     {
@@ -107,8 +123,7 @@ def planner(state: State) -> Dict:
         + "\n\nArborescence (200 premiers fichiers):\n"
         + repo_tree
     )
-    plan = gemini_json(model, plan_schema)
-    # Valeurs par défaut sûres
+    plan = gemini_json(client, prompt)
     plan.setdefault("constraints", {})
     plan["constraints"].setdefault(
         "forbidden_globs",
@@ -127,22 +142,17 @@ def auditor(state: State) -> Dict:
 
 
 def coder(state: State) -> Dict:
-    """
-    Coder conservateur: propose des diffs sûrs (README / libellés 2026).
-    Schéma de sortie: [{"path": "README.md", "content_after": "<nouveau contenu>"}]
-    """
-    model = init_gemini()
+    client = init_client()
     plan = state.get("plan", {})
     targets = plan.get("targets", [])
     diffs: List[dict] = []
 
-    # 1) README.md (si présent) — exemple concret
     if os.path.exists("README.md"):
         before = read("README.md")
         prompt = textwrap.dedent(f"""
         Tu es @coder. Modifie le contenu pour refléter "CrossFit Open 2026".
         - Conserve le style et les sections existantes.
-        - Corrige les références "2025" obsolètes si elles signifient l'édition en cours.
+        - Corrige les références "2025" obsolètes.
         - Ne change pas les badges/URLs si tu n'es pas certain.
         - Retourne STRICTEMENT un JSON: {{"path":"README.md","content_after":"..."}}
         CONTENU_ACTUEL:
@@ -150,28 +160,23 @@ def coder(state: State) -> Dict:
         {before}
         <<FIN>>
         """)
-        patch = gemini_json(model, prompt)
+        patch = gemini_json(client, prompt)
         if patch.get("path") == "README.md" and patch.get("content_after"):
             diffs.append(patch)
 
-    # 2) Cibles additionnelles proposées par le plan (petits fichiers texte)
     safe_roots = set(plan.get("constraints", {}).get("allowed_roots", []))
-    forbidden = plan.get("constraints", {}).get("forbidden_globs", [])
-    for t in targets[:5]:  # limite à 5 pour CI
+    for t in targets[:5]:
         p = t.get("path", "")
         if not p or not os.path.exists(p) or os.path.isdir(p):
             continue
-        # filtre simple "allowed_roots"
         root = p.split("/")[0] if "/" in p else ""
         if safe_roots and root not in safe_roots:
             continue
-        # garde-fous sur taille
         if os.path.getsize(p) > 200_000:
             continue
         before = read(p)
-        # Demande une petite correction/MAJ 2026 (si applicable)
         prompt = textwrap.dedent(f"""
-        Tu es @coder. Si et seulement si une mise à jour "Open 2026" est pertinente, propose une version corrigée du fichier.
+        Tu es @coder. Si et seulement si une mise à jour "Open 2026" est pertinente, propose une version corrigée.
         Sinon, retourne le fichier inchangé.
         JSON STRICT: {{"path":"{p}","content_after":"..."}}
         CONTENU_ACTUEL:
@@ -179,7 +184,7 @@ def coder(state: State) -> Dict:
         {before}
         <<FIN>>
         """)
-        patch = gemini_json(model, prompt)
+        patch = gemini_json(client, prompt)
         if (
             patch.get("path") == p
             and patch.get("content_after")
@@ -195,8 +200,9 @@ def tester(state: State) -> Dict:
 
 
 def docs(state: State) -> Dict:
-    note = "MAJ docs recommandée si de nouvelles règles/données 2026 sont ajoutées."
-    return {"docs_note": note}
+    return {
+        "docs_note": "MAJ docs recommandée si de nouvelles règles/données 2026 sont ajoutées."
+    }
 
 
 # -------- Graphe LangGraph --------
@@ -220,7 +226,6 @@ compiled = graph.compile()
 if __name__ == "__main__":
     spec = sys.argv[1] if len(sys.argv) > 1 else "specs/feature-template.yaml"
     result = compiled.invoke({"spec_path": spec, "diffs": []})
-    # Artefacts pour la PR
     write_json(
         "agent_artifacts.json",
         {
