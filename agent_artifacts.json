@@ -1,0 +1,22 @@
+{
+  "plan": {
+    "constraints": {
+      "forbidden_globs": [
+        ".github/**",
+        ".venv/**",
+        "credentials/**",
+        "**/*.key",
+        "**/*.pem"
+      ],
+      "allowed_roots": [
+        "",
+        "src",
+        "pages",
+        "docs"
+      ]
+    }
+  },
+  "security_report": "\n[stderr]\nruff failed\n  Cause: Failed to parse /home/runner/work/2026-CrossFit-Open/2026-CrossFit-Open/pyproject.toml\n  Cause: TOML parse error at line 6, column 1\n  |\n6 | fix = true\n  | ^^^\nunknown field `fix`, expected one of `allowed-confusables`, `dummy-variable-rgx`, `extend-ignore`, `extend-select`, `extend-fixable`, `extend-unfixable`, `external`, `fixable`, `ignore`, `extend-safe-fixes`, `extend-unsafe-fixes`, `ignore-init-module-imports`, `logger-objects`, `select`, `explicit-preview-rules`, `task-tags`, `typing-modules`, `unfixable`, `flake8-annotations`, `flake8-bandit`, `flake8-boolean-trap`, `flake8-bugbear`, `flake8-builtins`, `flake8-comprehensions`, `flake8-copyright`, `flake8-errmsg`, `flake8-quotes`, `flake8-self`, `flake8-tidy-imports`, `flake8-type-checking`, `flake8-gettext`, `flake8-implicit-str-concat`, `flake8-import-conventions`, `flake8-pytest-style`, `flake8-unused-arguments`, `isort`, `mccabe`, `pep8-naming`, `pycodestyle`, `pydocstyle`, `pyflakes`, `pylint`, `pyupgrade`, `per-file-ignores`, `extend-per-file-ignores`, `exclude`, `pydoclint`, `ruff`, `preview`, `typing-extensions`, `future-annotations`\n\n\n\nRun started:2026-02-10 15:14:26.506495+00:00\n\nTest results:\n>> Issue: [B404:blacklist] Consider possible security implications associated with the subprocess module.\n   Severity: Low   Confidence: High\n   CWE: CWE-78 (https://cwe.mitre.org/data/definitions/78.html)\n   More Info: https://bandit.readthedocs.io/en/1.9.3/blacklists/blacklist_imports.html#b404-import-subprocess\n   Location: ./orchestrator/langgraph_team.py:5:0\n4\timport os\n5\timport subprocess\n6\timport sys\n\n--------------------------------------------------\n>> Issue: [B602:subprocess_popen_with_shell_equals_true] subprocess call with shell=True identified, security issue.\n   Severity: High   Confidence: High\n   CWE: CWE-78 (https://cwe.mitre.org/data/definitions/78.html)\n   More Info: https://bandit.readthedocs.io/en/1.9.3/plugins/b602_subprocess_popen_with_shell_equals_true.html\n   Location: ./orchestrator/langgraph_team.py:21:10\n20\tdef sh(cmd: str) -> str:\n21\t    res = subprocess.run(cmd, shell=True, capture_output=True, text=True)\n22\t    return (res.stdout or \"\") + ((\"\\n[stderr]\\n\" + res.stderr) if res.stderr else \"\")\n\n--------------------------------------------------\n\nCode scanned:\n\tTotal lines of code: 859\n\tTotal lines skipped (#nosec): 0\n\tTotal potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 0\n\nRun metrics:\n\tTotal issues (by severity):\n\t\tUndefined: 0\n\t\tLow: 1\n\t\tMedium: 0\n\t\tHigh: 1\n\tTotal issues (by confidence):\n\t\tUndefined: 0\n\t\tLow: 0\n\t\tMedium: 0\n\t\tHigh: 2\nFiles skipped (0):\n\n\n\nPlease login or register Safety CLI (free forever) to scan and secure your \nprojects with Safety\n\n(R)egister for a free account in 30 seconds, or (L)ogin with an existing account\nto continue (R/L): \n[stderr]\nUnhandled exception happened: EOF when reading a line\n",
+  "test_report": "\nno tests ran in 0.00s\n",
+  "docs_note": "MAJ docs recommandée si de nouvelles règles/données 2026 sont ajoutées."
+}
