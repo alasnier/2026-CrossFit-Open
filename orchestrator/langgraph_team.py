@@ -43,7 +43,7 @@ def init_client() -> genai.Client:
     return genai.Client(api_key=api_key)
 
 
-def gemini_json(client: genai.Client, prompt: str, retries: int = 3) -> dict:
+def gemini_json(client: genai.Client, prompt: str, retries: int = 1) -> dict:
     """Appelle Gemini avec retry exponentiel sur 429, retourne du JSON strict."""
     model = "gemini-2.0-flash-001"  # free tier : 1500 req/jour, 15 req/min
     config = types.GenerateContentConfig(
@@ -89,48 +89,56 @@ class State(TypedDict):
 
 
 # -------- Nœuds d'agents --------
-def planner(state: State) -> Dict:
-    client = init_client()
+
+
+def plan_and_code(state: State) -> Dict:
+    client = init_client()  # google-genai Client
     spec = read(state["spec_path"])
     agents_rules = read("agents/AGENTS.md")
+    # Limiter l'arborescence à 80 fichiers pour réduire les tokens
     repo_tree = "\n".join(
         sorted(
             [
                 p
                 for p in glob.glob("**/*", recursive=True)
                 if os.path.isfile(p) and not p.startswith(".git/")
-            ][:200]
+            ][:80]
         )
     )
-    prompt = textwrap.dedent(
-        """
-    Tu es @planner. Produit un JSON strict correspondant à ce schéma:
-    {
-      "targets": [{"path": "string", "reason": "string"}],
-      "constraints": {"forbidden_globs": ["string"], "allowed_roots": ["string"]},
-      "notes": "string"
-    }
+    prompt = textwrap.dedent(f"""
+    Tu es une équipe @planner+@coder. Retourne STRICTEMENT un JSON:
+    {{
+      "plan": {{
+        "targets": [{{"path":"string","reason":"string"}}],
+        "constraints": {{"forbidden_globs":["string"],"allowed_roots":["string"]}},
+        "notes":"string"
+      }},
+      "diffs": [{{"path":"string","content_after":"string"}}]
+    }}
     Règles:
     - Respecte AGENTS.md (frontières/style).
-    - Propose une mise à jour 2026 minimale et sûre (README, libellés, petits correctifs).
-    - Interdiction de modifier creds, .env, .github, venv, credentials/, *.key, *.pem.
-    - Préfère des changements atomiques faciles à review.
-    Contexte SPEC:
-    """
-        + spec
-        + "\n\nAGENTS.md:\n"
-        + agents_rules
-        + "\n\nArborescence (200 premiers fichiers):\n"
-        + repo_tree
-    )
-    plan = gemini_json(client, prompt)
+    - Mise à jour 2026 minimale et sûre (README/libellés, petits correctifs).
+    - Interdit: creds, .env, .github, venv, credentials/, *.key, *.pem.
+    - Préfère des changements atomiques.
+    SPEC:
+    {spec}
+
+    AGENTS.md:
+    {agents_rules}
+
+    Arborescence (80 premiers fichiers):
+    {repo_tree}
+    """)
+    out = gemini_json(client, prompt, retries=1)  # <— 1 seule tentative
+    plan = out.get("plan", {})
+    # sane defaults
     plan.setdefault("constraints", {})
     plan["constraints"].setdefault(
         "forbidden_globs",
         [".github/**", ".venv/**", "credentials/**", "**/*.key", "**/*.pem"],
     )
-    plan["constraints"].setdefault("allowed_roots", ["", "src", "pages", "docs"])
-    return {"plan": plan}
+    plan["constraints"].setdefault("allowed_roots", ["", "pages", "docs"])
+    return {"plan": plan, "diffs": out.get("diffs", [])}
 
 
 def auditor(state: State) -> Dict:
@@ -139,60 +147,6 @@ def auditor(state: State) -> Dict:
     out.append(sh("bandit -r . -q || exit 0"))
     out.append(sh("safety scan -r requirements.txt || exit 0"))
     return {"security_report": "\n\n".join(out)}
-
-
-def coder(state: State) -> Dict:
-    client = init_client()
-    plan = state.get("plan", {})
-    targets = plan.get("targets", [])
-    diffs: List[dict] = []
-
-    if os.path.exists("README.md"):
-        before = read("README.md")
-        prompt = textwrap.dedent(f"""
-        Tu es @coder. Modifie le contenu pour refléter "CrossFit Open 2026".
-        - Conserve le style et les sections existantes.
-        - Corrige les références "2025" obsolètes.
-        - Ne change pas les badges/URLs si tu n'es pas certain.
-        - Retourne STRICTEMENT un JSON: {{"path":"README.md","content_after":"..."}}
-        CONTENU_ACTUEL:
-        <<README>>
-        {before}
-        <<FIN>>
-        """)
-        patch = gemini_json(client, prompt)
-        if patch.get("path") == "README.md" and patch.get("content_after"):
-            diffs.append(patch)
-
-    safe_roots = set(plan.get("constraints", {}).get("allowed_roots", []))
-    for t in targets[:5]:
-        p = t.get("path", "")
-        if not p or not os.path.exists(p) or os.path.isdir(p):
-            continue
-        root = p.split("/")[0] if "/" in p else ""
-        if safe_roots and root not in safe_roots:
-            continue
-        if os.path.getsize(p) > 200_000:
-            continue
-        before = read(p)
-        prompt = textwrap.dedent(f"""
-        Tu es @coder. Si et seulement si une mise à jour "Open 2026" est pertinente, propose une version corrigée.
-        Sinon, retourne le fichier inchangé.
-        JSON STRICT: {{"path":"{p}","content_after":"..."}}
-        CONTENU_ACTUEL:
-        <<FILE>>
-        {before}
-        <<FIN>>
-        """)
-        patch = gemini_json(client, prompt)
-        if (
-            patch.get("path") == p
-            and patch.get("content_after")
-            and patch["content_after"] != before
-        ):
-            diffs.append(patch)
-
-    return {"diffs": diffs}
 
 
 def tester(state: State) -> Dict:
@@ -207,18 +161,15 @@ def docs(state: State) -> Dict:
 
 # -------- Graphe LangGraph --------
 graph = StateGraph(State)
-graph.add_node("planner", planner)
+graph.add_node("plan_and_code", plan_and_code)
 graph.add_node("auditor", auditor)
-graph.add_node("coder", coder)
 graph.add_node("tester", tester)
 graph.add_node("docs", docs)
 
-graph.add_edge("planner", "auditor")
-graph.add_edge("auditor", "coder")
-graph.add_edge("coder", "tester")
+graph.add_edge("plan_and_code", "auditor")
+graph.add_edge("auditor", "tester")
 graph.add_edge("tester", "docs")
-
-graph.set_entry_point("planner")
+graph.set_entry_point("plan_and_code")
 graph.set_finish_point("docs")
 
 compiled = graph.compile()
