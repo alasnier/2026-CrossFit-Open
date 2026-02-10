@@ -1,0 +1,7 @@
+streamlit
+os
+datetime
+sqlalchemy
+numpy
+pandas
+plotly-express

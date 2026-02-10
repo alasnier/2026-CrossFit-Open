@@ -1,0 +1,73 @@
+name: Agent Team - Review & PR
+on:
+  workflow_dispatch:
+    inputs:
+      spec_path:
+        description: 'Chemin de la SPEC'
+        required: false
+        default: 'specs/feature-template.yaml'
+  issues:
+    types: [labeled]
+
+jobs:
+  run-team:
+    if: github.event_name == 'workflow_dispatch' || (github.event.label.name == 'agent-todo')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install tools (qualité + LLM)
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff bandit safety langgraph langchain pytest google-generativeai
+
+      - name: Run orchestrator
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        run: |
+          SPEC="${{ github.event.inputs.spec_path }}"
+          if [ -z "$SPEC" ]; then SPEC="specs/feature-template.yaml"; fi
+          python orchestrator/langgraph_team.py "$SPEC"
+
+      - name: Prepare branch & apply diffs
+        run: |
+          BR="agent/update-${{ github.run_id }}"
+          git checkout -b "$BR"
+
+          # Appliquer les diffs si présents
+          if [ -f diffs.json ]; then
+            python - <<'PY'
+import json, os
+if os.path.exists('diffs.json'):
+    diffs = json.load(open('diffs.json', encoding='utf-8'))
+    for d in diffs:
+        p = d["path"]
+        os.makedirs(os.path.dirname(p), exist_ok=True) if os.path.dirname(p) else None
+        with open(p, "w", encoding="utf-8") as f:
+            f.write(d["content_after"])
+PY
+            git add -A
+            git commit -m "feat(agent): apply diffs"
+          fi
+
+          # Toujours commiter les artefacts
+          git add agent_artifacts.json || true
+          git commit -m "chore(agent): artifacts" || true
+
+          git push --set-upstream origin "$BR" || true
+
+      - name: Create PR
+        env: { GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} }
+        run: |
+          gh pr create -B main -H "agent/update-${{ github.run_id }}" \
+            --title "Agent: audit + MAJ Open 2026 (auto)" \
+            --body "PR générée automatiquement par l'équipe d'agents IA."

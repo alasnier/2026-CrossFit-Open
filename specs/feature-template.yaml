@@ -1,0 +1,21 @@
+feature: "Mise à jour CrossFit Open 2026"
+description: >
+  Mettre à jour le site/outils pour l’édition 2026 (nouvelles épreuves, dates,
+  éventuels changements d’API/données, textes, assets).
+
+acceptance_criteria:
+  - "Les scripts d’ingestion 2026 s’exécutent (dry-run) sans erreurs."
+  - "Les pages/exports affichent 'Open 2026' et les épreuves connues."
+  - "Lint, SAST et dépendances passent sans blocants."
+
+tasks:
+  - id: data_26
+    desc: "Adapter l’ingestion/format pour la saison 2026"
+    files:
+      - path: src/...
+        action: modify
+  - id: ui_26
+    desc: "Mettre à jour libellés/README pour 2026"
+    files:
+      - path: README.md
+        action: modify
