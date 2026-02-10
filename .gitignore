@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+uv_venv/ # Si votre environnement uv est dans ce dossier
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
