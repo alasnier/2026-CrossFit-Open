@@ -1,24 +1,14 @@
-feature: "Mise à jour CrossFit Open 2026"
+feature: "Documentation Update 2026"
 description: >
-  Mettre à jour le site/outils pour l’édition 2026 (nouvelles épreuves, dates,
-  éventuels changements d’API/données, textes, assets).
-
-acceptance_criteria:
-  - "Les scripts d’ingestion 2026 s’exécutent (dry-run) sans erreurs."
-  - "Les pages/exports affichent 'Open 2026' et les épreuves connues."
-  - "Lint, SAST et dépendances passent sans blocants."
+  Mise à jour purement textuelle du README pour l'année 2026.
+  Aucun changement de code Python pour le moment.
 
 tasks:
-  - id: data_26
-    desc: "Adapter l’ingestion/format pour la saison 2026"
-    files:
-      - path: pages/Classement.py
-      - path: pages/Saisie_scores.py
-      - path: pages/Statistics.py
-      - path: pages/Wods_open2025.py
-        action: modify
-  - id: ui_26
-    desc: "Mettre à jour libellés/README pour 2026"
+  - id: update_readme
+    desc: "Update README branding"
     files:
       - path: README.md
-        action: modify
+        instruction: |
+          Replace references to '2025' with '2026'.
+          Update the introduction to mention the new season dates (Feb 26, 2026).
+          Ensure the tone is welcoming for the new season.

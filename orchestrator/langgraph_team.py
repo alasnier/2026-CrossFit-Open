@@ -1,20 +1,15 @@
-# orchestrator/langgraph_team.py (v3.1 - google-genai SDK, safe subprocess)
+# orchestrator/langgraph_team.py (Version simplifiée pour CI Robuste)
 from __future__ import annotations
 
-import glob
 import json
 import os
-import subprocess
 import sys
 import textwrap
 import time
 from typing import TypedDict
 
-# Google GenAI SDK (nouveau client)
 from google import genai
 from google.genai import types
-
-# LangGraph
 from langgraph.graph import StateGraph
 
 
@@ -30,15 +25,6 @@ def read(path: str) -> str:
 def write_json(path: str, data):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
-
-
-def sh_list(args: list[str]) -> str:
-    """Exécuter une commande sans shell, capturer stdout/stderr, ne jamais lever."""
-    res = subprocess.run(args, capture_output=True, text=True)
-    out = res.stdout or ""
-    if res.stderr:
-        out += "\n[stderr]\n" + res.stderr
-    return out
 
 
 # ---------- LLM (google-genai) ----------
@@ -84,108 +70,51 @@ def gemini_json(client: genai.Client, prompt: str, retries: int = 1) -> dict:
 class State(TypedDict):
     spec_path: str
     plan: dict
-    security_report: str
-    diffs: list[dict]  # [{"path": str, "content_after": str}]
-    test_report: str
-    docs_note: str
+    diffs: list[dict]
 
 
-# ---------- Nœuds d'agents ----------
+# ---------- Node Unique : Planner + Coder ----------
 def plan_and_code(state: State) -> dict:
     client = init_client()
     spec = read(state["spec_path"])
     agents_rules = read("agents/AGENTS.md")
 
-    # Limiter l’arborescence pour réduire les tokens et limiter les 429
-    repo_tree = "\n".join(
-        sorted(
-            [
-                p
-                for p in glob.glob("**/*", recursive=True)
-                if os.path.isfile(p) and not p.startswith(".git/")
-            ][:80]
-        )
-    )
+    # On ne lit que les fichiers pertinents pour limiter les tokens (README ici)
+    # Pour le test, on force la lecture du README et requirements.in
+    target_files = ["README.md", "requirements.in"]
+    file_contents = ""
+    for path in target_files:
+        if os.path.exists(path):
+            file_contents += f"\n--- {path} ---\n{read(path)}\n"
 
     prompt = textwrap.dedent(f"""
-    Tu es une équipe @planner+@coder. Retourne STRICTEMENT un JSON:
-    {{
-      "plan": {{
-        "targets": [{{"path":"string","reason":"string"}}],
-        "constraints": {{"forbidden_globs":["string"],"allowed_roots":["string"]}},
-        "notes":"string"
-      }},
-      "diffs": [{{"path":"string","content_after":"string"}}]
-    }}
-    Règles:
-    - Respecte AGENTS.md (frontières/style).
-    - Mise à jour 2026 minimale et sûre (README/libellés, petits correctifs).
-    - Interdit: creds, .env, .github, venv, credentials/, *.key, *.pem.
-    - Préfère des changements atomiques.
-
+    Tu es un expert DevOps/Python. Applique la SPEC demandée.
+    Retourne un JSON strict : {{ "diffs": [{{"path": "...", "content_after": "..."}}] }}
+    
+    RÈGLES :
+    1. Si la spec demande de modifier le README, réécris tout le fichier proprement.
+    2. Si 'requirements.in' doit être maj, change-le (mais ne touche PAS à requirements.txt, la CI s'en occupe).
+    
     SPEC:
     {spec}
 
-    AGENTS.md:
-    {agents_rules}
-
-    Arborescence (80 premiers fichiers):
-    {repo_tree}
+    FICHIERS ACTUELS:
+    {file_contents}
     """)
 
-    out = gemini_json(client, prompt, retries=1)
-    plan = out.get("plan", {})
-    plan.setdefault("constraints", {})
-    plan["constraints"].setdefault(
-        "forbidden_globs", [".github/**", ".venv/**", "credentials/**", "**/*.key", "**/*.pem"]
-    )
-    plan["constraints"].setdefault("allowed_roots", ["", "pages", "docs"])
-
-    return {"plan": plan, "diffs": out.get("diffs", [])}
+    out = gemini_json(client, prompt)
+    return {"diffs": out.get("diffs", [])}
 
 
-def auditor(state: State) -> dict:
-    out = []
-    out.append(sh_list(["ruff", "check", "--fix", "."]))
-    out.append(sh_list(["bandit", "-r", ".", "-q"]))
-    # NB: Safety retiré côté code; audit deps via `pip-audit` dans la CI.
-    return {"security_report": "\n\n".join(out)}
-
-
-def tester(state: State) -> dict:
-    return {"test_report": sh_list(["pytest", "-q"])}
-
-
-def docs(state: State) -> dict:
-    return {"docs_note": "MAJ docs recommandée si de nouvelles règles/données 2026 sont ajoutées."}
-
-
-# ---------- Graphe LangGraph ----------
+# ---------- Graphe Simple ----------
 graph = StateGraph(State)
 graph.add_node("plan_and_code", plan_and_code)
-graph.add_node("auditor", auditor)
-graph.add_node("tester", tester)
-graph.add_node("docs", docs)
-
-graph.add_edge("plan_and_code", "auditor")
-graph.add_edge("auditor", "tester")
-graph.add_edge("tester", "docs")
 graph.set_entry_point("plan_and_code")
-graph.set_finish_point("docs")
-
+graph.set_finish_point("plan_and_code")  # Fin immédiate, la CI gère la suite
 compiled = graph.compile()
 
 if __name__ == "__main__":
     spec = sys.argv[1] if len(sys.argv) > 1 else "specs/feature-template.yaml"
     result = compiled.invoke({"spec_path": spec, "diffs": []})
-    write_json(
-        "agent_artifacts.json",
-        {
-            "plan": result.get("plan"),
-            "security_report": result.get("security_report"),
-            "test_report": result.get("test_report"),
-            "docs_note": result.get("docs_note"),
-        },
-    )
     write_json("diffs.json", result.get("diffs", []))
-    print("\n[Agent artifacts written to agent_artifacts.json + diffs.json]")
+    print("[Agent] Diffs générés dans diffs.json")

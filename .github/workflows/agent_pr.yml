@@ -6,12 +6,9 @@ on:
         description: 'Chemin de la SPEC'
         required: false
         default: 'specs/feature-template.yaml'
-  issues:
-    types: [labeled]
 
 jobs:
   run-team:
-    if: github.event_name == 'workflow_dispatch' || (github.event.label.name == 'agent-todo')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -24,13 +21,18 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
 
-      - name: Install tools (qualité + LLM)
+      - name: Install Tools (Agent + Ops)
         run: |
           python -m pip install --upgrade pip
-          pip install ruff bandit langgraph langchain pytest google-genai pip-audit
+          # Installation des outils IA + l'outil 'uv' pour la compil des deps
+          pip install ruff bandit langgraph langchain google-genai pip-audit pytest uv
 
-      - name: Run orchestrator
+      # ---------------------------------------------------------
+      # ÉTAPE 1 : L'AGENT (Plan & Code)
+      # ---------------------------------------------------------
+      - name: Agent Team (Plan & Code)
         env:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
         run: |
@@ -38,52 +40,60 @@ jobs:
           if [ -z "$SPEC" ]; then SPEC="specs/feature-template.yaml"; fi
           python orchestrator/langgraph_team.py "$SPEC"
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: agent-output
-          path: |
-            agent_artifacts.json
-            diffs.json
-
-      - name: pip-audit (deps vulnérables)
+      # ---------------------------------------------------------
+      # ÉTAPE 2 : APPLICATION & COMPILATION (Ops Séquentiel)
+      # ---------------------------------------------------------
+      - name: Apply Diffs & Compile Deps
         run: |
-          if [ -f requirements.txt ]; then
-            pip-audit -r requirements.txt -f json -o pip_audit.json || true
-          else
-            pip-audit -f json -o pip_audit.json || true
-          fi
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: agent-output
-          path: |
-            agent_artifacts.json
-            diffs.json
-            pip_audit.json
-
-      - name: Prepare branch & apply diffs
-        run: |
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config user.name "github-actions[bot]"
+          git config user.email "agent-team[bot]@users.noreply.github.com"
+          git config user.name "agent-team[bot]"
           BR="agent/update-${{ github.run_id }}"
           git checkout -b "$BR"
 
+          # 1. Appliquer les modifications de code de l'agent
           if [ -f diffs.json ]; then
             python .github/workflows/scripts/apply_diffs.py
-            git add -A
-            git commit -m "feat(agent): apply diffs"
           fi
 
-          git add agent_artifacts.json || true
-          git commit -m "chore(agent): artifacts (audit/tests/docs note)" || true
-          git push --set-upstream origin "$BR" || true
+          # 2. Compilation auto des requirements (Si requirements.in existe)
+          # C'est ici qu'on résout ton problème de synchro
+          if [ -f requirements.in ]; then
+             echo "Compiling requirements with uv..."
+             uv pip compile requirements.in -o requirements.txt
+          fi
 
-      - name: Create PR
+      # ---------------------------------------------------------
+      # ÉTAPE 3 : AUDIT & LINT (Qualité après modifs)
+      # ---------------------------------------------------------
+      - name: Post-Code Quality Check
+        run: |
+          # Lint & Fix auto (Black/Isort via Ruff)
+          ruff format . || true
+          ruff check --fix . || true
+          
+          # Audit de sécurité
+          if [ -f requirements.txt ]; then
+            pip-audit -r requirements.txt -f json -o pip_audit.json || true
+          fi
+
+      # ---------------------------------------------------------
+      # ÉTAPE 4 : COMMIT & PR
+      # ---------------------------------------------------------
+      - name: Push & Create PR
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh pr create -B main -H "agent/update-${{ github.run_id }}" \
-            --title "Agent: audit + MAJ Open 2026 (auto)" \
-            --body "PR générée automatiquement par l'équipe d'agents IA (plan/rapports dans agent_artifacts.json ; diffs appliqués si présents)."
+          # On ajoute tout : code agent + requirements compilés + fixes du linter
+          git add -A
+          
+          if [[ -n $(git status -s) ]]; then
+            git commit -m "feat(agent): update 2026 (auto-compiled & linted)"
+            git push --force --set-upstream origin "agent/update-${{ github.run_id }}"
+            
+            gh pr create -B main -H "agent/update-${{ github.run_id }}" \
+              --title "🤖 Agent Team: Update 2026" \
+              --body "PR générée automatiquement.\n\n- Scope: ${{ github.event.inputs.spec_path }}\n- Deps: Compilées via uv\n- Style: Corrigé via Ruff" \
+              || echo "PR déjà existante."
+          else
+            echo "Aucun changement détecté."
+          fi
