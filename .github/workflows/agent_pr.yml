@@ -38,6 +38,14 @@ jobs:
           if [ -z "$SPEC" ]; then SPEC="specs/feature-template.yaml"; fi
           python orchestrator/langgraph_team.py "$SPEC"
 
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-output
+          path: |
+            agent_artifacts.json
+            diffs.json
+
       - name: Prepare branch & apply diffs
         run: |
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -46,7 +54,7 @@ jobs:
           git checkout -b "$BR"
 
           if [ -f diffs.json ]; then
-            python scripts/apply_diffs.py
+            python .github/workflows/scripts/apply_diffs.py
             git add -A
             git commit -m "feat(agent): apply diffs"
           fi
@@ -54,3 +62,11 @@ jobs:
           git add agent_artifacts.json || true
           git commit -m "chore(agent): artifacts (audit/tests/docs note)" || true
           git push --set-upstream origin "$BR" || true
+
+      - name: Create PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create -B main -H "agent/update-${{ github.run_id }}" \
+            --title "Agent: audit + MAJ Open 2026 (auto)" \
+            --body "PR générée automatiquement par l'équipe d'agents IA (plan/rapports dans agent_artifacts.json ; diffs appliqués si présents)."
