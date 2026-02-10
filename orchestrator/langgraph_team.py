@@ -36,7 +36,7 @@ def init_client() -> genai.Client:
 
 
 def gemini_json(client: genai.Client, prompt: str, retries: int = 2) -> dict:
-    model = "gemini-2.0-flash-001"
+    model = "gemini-2.0-flash-lite-001"
     config = types.GenerateContentConfig(
         temperature=0.2,
         response_mime_type="application/json",
