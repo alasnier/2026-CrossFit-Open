@@ -5,7 +5,6 @@ import json
 import os
 import sys
 import textwrap
-import time
 from typing import TypedDict
 
 from google import genai
@@ -35,25 +34,42 @@ def init_client() -> genai.Client:
     return genai.Client(api_key=api_key)
 
 
-def gemini_json(client: genai.Client, prompt: str, retries: int = 2) -> dict:
-    model = "gemini-2.0-flash-lite-001"
+def gemini_json(client: genai.Client, prompt: str) -> dict:
+    # On change de réservoirs pour éviter les erreurs 429 persistantes
+    models_to_try = [
+        "gemini-3-flash-preview",  # Nouvelle génération (Quota souvent distinct)
+        "gemini-1.5-flash",  # Ancienne génération (Le plus de chances d'être dispo)
+        "gemini-exp-1206",  # Modèle expérimental (Quota à part)
+        "gemini-2.0-flash",  # Ton choix initial (en dernier recours)
+    ]
+
     config = types.GenerateContentConfig(
         temperature=0.2,
         response_mime_type="application/json",
     )
-    # Correction : on utilise range(retries + 1) pour vraiment retenter
-    for attempt in range(retries + 1):
+
+    for model_name in models_to_try:
+        print(f"[gemini] Tentative avec : {model_name}")
         try:
-            resp = client.models.generate_content(model=model, contents=prompt, config=config)
+            # On ne fait qu'une tentative rapide pour passer au suivant si ça bloque
+            resp = client.models.generate_content(model=model_name, contents=prompt, config=config)
+            print(f"[gemini] Succès avec {model_name} !")
             return json.loads(resp.text or "{}")
+
         except Exception as e:
-            if ("429" in str(e) or "ResourceExhausted" in str(e)) and attempt < retries:
-                wait = 65  # Un peu plus de 60s pour être sûr
-                print(f"[gemini] Quota atteint, attente de {wait}s...")
-                time.sleep(wait)
+            err_msg = str(e)
+            if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg:
+                # Si le quota journalier est atteint (limit: 0), on n'attend pas, on switch.
+                if "PerDay" in err_msg:
+                    print(f"[gemini] {model_name} : Quota journalier vide. Suivant...")
+                else:
+                    print(f"[gemini] {model_name} : Trop de requêtes. Suivant...")
+                continue
             else:
-                print(f"[gemini] Erreur fatale ou fin de tentatives : {e}")
-                break
+                print(f"[gemini] Erreur sur {model_name}: {err_msg}")
+                continue
+
+    print("[gemini] 🚨 ÉCHEC : Tous les modèles sont épuisés pour aujourd'hui.")
     return {}
 
 
