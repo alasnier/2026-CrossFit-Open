@@ -1,6 +1,5 @@
 import streamlit as st
 
-
 # Config default settings of the page.
 
 
