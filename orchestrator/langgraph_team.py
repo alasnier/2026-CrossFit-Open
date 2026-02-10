@@ -1,16 +1,16 @@
-# orchestrator/langgraph_team.py (v3 - google-genai SDK)
+# orchestrator/langgraph_team.py (v3.1 - google-genai SDK, safe subprocess)
+from __future__ import annotations
+
 import glob
 import json
 import os
-
-# -------- Utils shell / IO --------
 import subprocess
 import sys
 import textwrap
 import time
 from typing import TypedDict
 
-# Nouveau SDK (google-genai, remplace google-generativeai déprécié)
+# Google GenAI SDK (nouveau client)
 from google import genai
 from google.genai import types
 
@@ -18,27 +18,7 @@ from google.genai import types
 from langgraph.graph import StateGraph
 
 
-def sh_list(args: list[str]) -> str:
-    # Pas de shell, on capture tout et on n’échoue jamais (on renvoie stdout+stderr)
-    res = subprocess.run(args, capture_output=True, text=True)
-    out = res.stdout or ""
-    if res.stderr:
-        out += "\n[stderr]\n" + res.stderr
-    return out
-
-
-def auditor(state: State) -> Dict:
-    out = []
-    out.append(sh_list(["ruff", "check", "--fix", "."]))
-    out.append(sh_list(["bandit", "-r", ".", "-q"]))
-    # rem: safety retiré, remplacé par pip-audit côté CI (cf. YAML)
-    return {"security_report": "\n\n".join(out)}
-
-
-def tester(state: State) -> Dict:
-    return {"test_report": sh_list(["pytest", "-q"])}
-
-
+# ---------- Utils ----------
 def read(path: str) -> str:
     try:
         with open(path, encoding="utf-8") as f:
@@ -52,7 +32,16 @@ def write_json(path: str, data):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-# -------- LLM setup (google-genai) --------
+def sh_list(args: list[str]) -> str:
+    """Exécuter une commande sans shell, capturer stdout/stderr, ne jamais lever."""
+    res = subprocess.run(args, capture_output=True, text=True)
+    out = res.stdout or ""
+    if res.stderr:
+        out += "\n[stderr]\n" + res.stderr
+    return out
+
+
+# ---------- LLM (google-genai) ----------
 def init_client() -> genai.Client:
     api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
@@ -61,8 +50,8 @@ def init_client() -> genai.Client:
 
 
 def gemini_json(client: genai.Client, prompt: str, retries: int = 1) -> dict:
-    """Appelle Gemini avec retry exponentiel sur 429, retourne du JSON strict."""
-    model = "gemini-2.0-flash-001"  # free tier : 1500 req/jour, 15 req/min
+    """Appelle Gemini; si 429, backoff minimal; retourne du JSON strict si possible."""
+    model = "gemini-2.0-flash-001"  # free tier / CI
     config = types.GenerateContentConfig(
         temperature=0.2,
         response_mime_type="application/json",
@@ -83,7 +72,7 @@ def gemini_json(client: genai.Client, prompt: str, retries: int = 1) -> dict:
                 return json.loads(txt[start : end + 1]) if start >= 0 and end >= 0 else {}
         except Exception as e:
             if "429" in str(e) or "ResourceExhausted" in str(e):
-                wait = 60 * (attempt + 1)  # 60s, 120s, 180s
+                wait = 60 * (attempt + 1)  # 60s seulement, puis on abandonne
                 print(f"[gemini] 429 quota — attente {wait}s (tentative {attempt + 1}/{retries})")
                 time.sleep(wait)
             else:
@@ -91,24 +80,23 @@ def gemini_json(client: genai.Client, prompt: str, retries: int = 1) -> dict:
     return {}
 
 
-# -------- État partagé --------
+# ---------- État partagé ----------
 class State(TypedDict):
     spec_path: str
     plan: dict
     security_report: str
-    diffs: list[dict]
+    diffs: list[dict]  # [{"path": str, "content_after": str}]
     test_report: str
     docs_note: str
 
 
-# -------- Nœuds d'agents --------
-
-
+# ---------- Nœuds d'agents ----------
 def plan_and_code(state: State) -> dict:
-    client = init_client()  # google-genai Client
+    client = init_client()
     spec = read(state["spec_path"])
     agents_rules = read("agents/AGENTS.md")
-    # Limiter l'arborescence à 80 fichiers pour réduire les tokens
+
+    # Limiter l’arborescence pour réduire les tokens et limiter les 429
     repo_tree = "\n".join(
         sorted(
             [
@@ -118,6 +106,7 @@ def plan_and_code(state: State) -> dict:
             ][:80]
         )
     )
+
     prompt = textwrap.dedent(f"""
     Tu es une équipe @planner+@coder. Retourne STRICTEMENT un JSON:
     {{
@@ -133,6 +122,7 @@ def plan_and_code(state: State) -> dict:
     - Mise à jour 2026 minimale et sûre (README/libellés, petits correctifs).
     - Interdit: creds, .env, .github, venv, credentials/, *.key, *.pem.
     - Préfère des changements atomiques.
+
     SPEC:
     {spec}
 
@@ -142,35 +132,35 @@ def plan_and_code(state: State) -> dict:
     Arborescence (80 premiers fichiers):
     {repo_tree}
     """)
-    out = gemini_json(client, prompt, retries=1)  # <— 1 seule tentative
+
+    out = gemini_json(client, prompt, retries=1)
     plan = out.get("plan", {})
-    # sane defaults
     plan.setdefault("constraints", {})
     plan["constraints"].setdefault(
-        "forbidden_globs",
-        [".github/**", ".venv/**", "credentials/**", "**/*.key", "**/*.pem"],
+        "forbidden_globs", [".github/**", ".venv/**", "credentials/**", "**/*.key", "**/*.pem"]
     )
     plan["constraints"].setdefault("allowed_roots", ["", "pages", "docs"])
+
     return {"plan": plan, "diffs": out.get("diffs", [])}
 
 
 def auditor(state: State) -> dict:
     out = []
-    out.append(sh("ruff check --fix ."))
-    out.append(sh("bandit -r . -q || exit 0"))
-    out.append(sh("safety scan -r requirements.txt || exit 0"))
+    out.append(sh_list(["ruff", "check", "--fix", "."]))
+    out.append(sh_list(["bandit", "-r", ".", "-q"]))
+    # NB: Safety retiré côté code; audit deps via `pip-audit` dans la CI.
     return {"security_report": "\n\n".join(out)}
 
 
 def tester(state: State) -> dict:
-    return {"test_report": sh("pytest -q || exit 0")}
+    return {"test_report": sh_list(["pytest", "-q"])}
 
 
 def docs(state: State) -> dict:
     return {"docs_note": "MAJ docs recommandée si de nouvelles règles/données 2026 sont ajoutées."}
 
 
-# -------- Graphe LangGraph --------
+# ---------- Graphe LangGraph ----------
 graph = StateGraph(State)
 graph.add_node("plan_and_code", plan_and_code)
 graph.add_node("auditor", auditor)
