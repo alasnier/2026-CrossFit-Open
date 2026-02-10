@@ -45,31 +45,12 @@ jobs:
           BR="agent/update-${{ github.run_id }}"
           git checkout -b "$BR"
 
-          # Appliquer les diffs si présents
           if [ -f diffs.json ]; then
-            python - <<'PY'
-import json, os
-if os.path.exists('diffs.json'):
-    diffs = json.load(open('diffs.json', encoding='utf-8'))
-    for d in diffs:
-        p = d["path"]
-        os.makedirs(os.path.dirname(p), exist_ok=True) if os.path.dirname(p) else None
-        with open(p, "w", encoding="utf-8") as f:
-            f.write(d["content_after"])
-PY
+            python scripts/apply_diffs.py
             git add -A
             git commit -m "feat(agent): apply diffs"
           fi
 
-          
-          # Toujours commiter les artefacts pour debug
           git add agent_artifacts.json || true
           git commit -m "chore(agent): artifacts (audit/tests/docs note)" || true
           git push --set-upstream origin "$BR" || true
-
-      - name: Create PR
-        env: { GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} }
-        run: |
-          gh pr create -B main -H "agent/update-${{ github.run_id }}" \
-            --title "Agent: audit + MAJ Open 2026 (auto)" \
-            --body $'Cette PR est générée par l\'équipe d\'agents.\n\n- Rapports: agent_artifacts.json\n- Diffs: diffs.json (appliqués si présents)\n\nVérifiez les changements avant merge.'
