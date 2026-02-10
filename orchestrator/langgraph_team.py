@@ -45,7 +45,7 @@ def init_client() -> genai.Client:
 
 def gemini_json(client: genai.Client, prompt: str, retries: int = 3) -> dict:
     """Appelle Gemini avec retry exponentiel sur 429, retourne du JSON strict."""
-    model = "gemini-1.5-flash"  # free tier : 1500 req/jour, 15 req/min
+    model = "gemini-2.0-flash-001"  # free tier : 1500 req/jour, 15 req/min
     config = types.GenerateContentConfig(
         temperature=0.2,
         response_mime_type="application/json",
