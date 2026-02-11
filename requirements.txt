@@ -16,10 +16,6 @@ charset-normalizer==3.4.1
     # via requests
 click==8.1.8
     # via streamlit
-colorama==0.4.6
-    # via click
-datetime==6.0
-    # via -r requirements.in
 gitdb==4.0.12
     # via gitpython
 gitpython==3.1.44
@@ -39,7 +35,9 @@ jsonschema-specifications==2024.10.1
 markdown-it-py==3.0.0
     # via rich
 markupsafe==3.0.2
-    # via jinja2
+    # via
+    #   jinja2
+    #   werkzeug
 mdurl==0.1.2
     # via markdown-it-py
 narwhals==1.26.0
@@ -80,6 +78,8 @@ plotly-express==0.4.1
     # via -r requirements.in
 protobuf==5.29.3
     # via streamlit
+psycopg2-binary==2.9.11
+    # via -r requirements.in
 pyarrow==19.0.0
     # via streamlit
 pydeck==0.9.1
@@ -89,9 +89,7 @@ pygments==2.19.1
 python-dateutil==2.9.0.post0
     # via pandas
 pytz==2025.1
-    # via
-    #   datetime
-    #   pandas
+    # via pandas
 referencing==0.36.2
     # via
     #   jsonschema
@@ -136,5 +134,5 @@ urllib3==2.3.0
     # via requests
 watchdog==6.0.0
     # via streamlit
-zope-interface==8.2
-    # via datetime
+werkzeug==3.1.5
+    # via -r requirements.in

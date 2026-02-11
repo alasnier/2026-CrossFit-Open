@@ -1,27 +1,21 @@
-from datetime import datetime
+import re
 
 import streamlit as st
-from sqlalchemy.orm import sessionmaker
 
-from pages.Authentification import Score, User, engine
+from infra.db import get_session
+from pages.Authentification import Score, User, Wod
 
-# Connexion à la base de données
-Session = sessionmaker(bind=engine)
-session = Session()
-
-# Titre de la page
 st.title("Saisie des Scores des WODs")
 
-# Récupération de l'utilisateur dans la session
-user = st.session_state.get("user")  # Récupère l'objet utilisateur stocké
+user = st.session_state.get("user")
 if not user:
     st.warning(
         "Veuillez vous connecter pour enregistrer votre score => onglet Authentification (Barre Laterale Gauche)"
     )
     st.stop()
 
-user_email = user["email"]
-user = session.query(User).filter_by(email=user_email).first()
+with get_session(readonly=True) as s:
+    user_db = s.query(User).filter_by(email=user["email"]).first()
 
 wod_descriptions = {
     "26.1": """
@@ -66,30 +60,47 @@ wod_descriptions = {
 score_instructions = {
     "26.3": """
     🏋️ **Comment entrer votre score ?**
-    - Si vous terminez avant la limite de temps (20 minutes), entrez votre temps sous le format **MM:SS**.
+    - Si vous terminez avant la limite de temps, entrez **MM:SS**.
     - Si vous n’avez pas terminé avant le time cap :
-      - **Entrez "20:XX"**, où **XX = 1 seconde par répétition manquante**.
-      - Exemple : il vous restait 5 répétitions à faire → votre score est **20:05**.
+      - **Entrez "CAP:XX"**, où **XX = 1 seconde par répétition manquante** (ex: 12' => CAP:05 => 725 s si cap=720).
     """,
     "26.1": """
 🔥 **Comment entrer votre score ?**  
 - Ce WOD est un **AMRAP de 15 minutes**.  
-- Entrez **le nombre total de répétitions effectuées** pendant les 15 minutes.
+- Entrez **le nombre total de répétitions**.
 """,
 }
 
 
-# Si l'utilisateur est trouvé, afficher les options de saisie
-if user:
+def normalize_time_score(input_str: str, timecap_seconds: int) -> int | None:
+    if not input_str:
+        return None
+    s = input_str.strip().upper()
+    m = re.match(r"^CAP:(\d{1,3})$", s)
+    if m:
+        return timecap_seconds + int(m.group(1))
+    try:
+        parts = list(map(int, s.split(":")))
+        if len(parts) == 2:
+            return parts[0] * 60 + parts[1]
+        elif len(parts) == 3:
+            return parts[0] * 3600 + parts[1] * 60 + parts[2]
+    except Exception:
+        return None
+    return None
+
+
+if user_db:
     wod = st.selectbox("Sélectionner le WOD", ["26.1", "26.2", "26.3"])
     st.markdown(f"### WOD {wod}")
     st.markdown(wod_descriptions[wod])
     st.markdown("---")
-    st.markdown(score_instructions[wod])
+    st.markdown(score_instructions.get(wod, ""))
     st.markdown("---")
 
-    # Vérifier si l'utilisateur a déjà enregistré un score
-    existing_score = session.query(Score).filter_by(user_id=user.id, wod=wod).first()
+    with get_session(readonly=True) as s:
+        wod_meta = s.query(Wod).filter(Wod.wod == wod).first()
+        existing_score = s.query(Score).filter_by(user_id=user_db.id, wod=wod).first()
 
     if existing_score:
         st.warning(f"Score actuel pour {wod} : {existing_score.score}")
@@ -99,35 +110,33 @@ if user:
 
     if modify:
         new_score = None
-        if wod in ["26.3"]:
+        if wod_meta and wod_meta.type == "time":
             score_input = st.text_input(
-                "Entrez votre score (format MM:SS)",
+                "Entrez votre score (format 'MM:SS' ou 'CAP:XX')",
                 existing_score.score if existing_score else "",
             )
-            try:
-                new_score = datetime.strptime(score_input, "%M:%S").strftime("%M:%S")
-            except ValueError:
-                st.error("Format de temps incorrect. Utilisez MM:SS.")
-        elif wod == "26.1":
-            new_score = st.number_input(
+            seconds = normalize_time_score(score_input, wod_meta.timecap_seconds or 0)
+            if score_input and seconds is None:
+                st.error("Format incorrect. Utilisez 'MM:SS' ou 'CAP:XX'.")
+            new_score = score_input if seconds is not None else None
+        else:
+            reps_val = st.number_input(
                 "Entrez votre nombre de répétitions",
                 min_value=0,
                 step=1,
-                value=int(existing_score.score) if existing_score else 0,
+                value=int(existing_score.score)
+                if (existing_score and existing_score.score.isdigit())
+                else 0,
             )
+            new_score = str(reps_val)
 
         if st.button("Enregistrer" if not existing_score else "Mettre à jour"):
             if new_score:
-                if existing_score:
-                    existing_score.score = str(new_score)
-                else:
-                    new_score_entry = Score(
-                        user_id=user.id, wod=wod, score=str(new_score)
-                    )
-                    session.add(new_score_entry)
-                session.commit()
+                with get_session() as s:
+                    if existing_score:
+                        existing_score.score = str(new_score)
+                    else:
+                        s.add(Score(user_id=user_db.id, wod=wod, score=str(new_score)))
                 st.success("Score enregistré avec succès !")
 else:
-    st.warning(
-        "Veuillez vous connecter pour enregistrer votre score => onglet Authentification (Barre Laterale Gauche)"
-    )
+    st.warning("Utilisateur introuvable — reconnectez-vous.")
