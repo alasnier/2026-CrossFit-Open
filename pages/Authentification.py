@@ -1,17 +1,18 @@
-import streamlit as st
 import os
 from datetime import datetime
+
+import streamlit as st
 from sqlalchemy import (
-    create_engine,
+    TIMESTAMP,
     Column,
+    ForeignKey,
     Integer,
     String,
-    ForeignKey,
-    TIMESTAMP,
+    create_engine,
     func,
 )
-from sqlalchemy.orm import sessionmaker, declarative_base, relationship
-from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy.orm import declarative_base, relationship, sessionmaker
+from werkzeug.security import check_password_hash, generate_password_hash
 
 ##################################################
 # PostgreSQL connection URL
@@ -84,9 +85,7 @@ def login():
         with st.form(key="register_form"):
             name = st.text_input("Full Name")
             email = st.text_input("Email")
-            password = st.text_input(
-                "Password", type="password"
-            )  # Champ de mot de passe
+            password = st.text_input("Password", type="password")  # Champ de mot de passe
             sex = st.radio("Sex", ["Male", "Female"])
             birth_year = st.number_input(
                 "Year of Birth", min_value=1950, max_value=datetime.now().year
@@ -109,9 +108,7 @@ def login():
                         st.error("Email already registered. Please login.")
                     else:
                         # Hacher le mot de passe
-                        hashed_password = generate_password_hash(
-                            password, method="pbkdf2:sha256"
-                        )
+                        hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
 
                         # Save user to database
                         new_user = User(
@@ -145,9 +142,7 @@ def login():
         st.subheader("Or Login:")
         with st.form(key="login_form"):
             email_login = st.text_input("Email")
-            password_login = st.text_input(
-                "Password", type="password"
-            )  # Ajout du champ password
+            password_login = st.text_input("Password", type="password")  # Ajout du champ password
             submit_button_login = st.form_submit_button("Login")
 
             if submit_button_login:
@@ -187,9 +182,7 @@ def change_password():
     st.subheader("Change Password if you want:")
 
     session = Session()
-    user = (
-        session.query(User).filter_by(email=st.session_state["user"]["email"]).first()
-    )
+    user = session.query(User).filter_by(email=st.session_state["user"]["email"]).first()
 
     if user:
         with st.form(key="change_password_form"):

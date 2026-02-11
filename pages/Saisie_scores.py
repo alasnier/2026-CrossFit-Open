@@ -121,9 +121,7 @@ if user:
                 if existing_score:
                     existing_score.score = str(new_score)
                 else:
-                    new_score_entry = Score(
-                        user_id=user.id, wod=wod, score=str(new_score)
-                    )
+                    new_score_entry = Score(user_id=user.id, wod=wod, score=str(new_score))
                     session.add(new_score_entry)
                 session.commit()
                 st.success("Score enregistré avec succès !")

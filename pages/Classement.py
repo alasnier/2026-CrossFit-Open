@@ -58,9 +58,7 @@ if wod_selected == "Overall":
     general_classement = {}
     scores_details = {}
     for wod in ["26.1", "26.2", "26.3"]:
-        wod_classement, wod_scores = calculer_classement(
-            wod, sex_selected, level_selected
-        )
+        wod_classement, wod_scores = calculer_classement(wod, sex_selected, level_selected)
         for (level, sex), athletes in wod_classement.items():
             for i, (name, _) in enumerate(athletes):
                 general_classement.setdefault((name, level, sex), 0)
@@ -77,28 +75,19 @@ if wod_selected == "Overall":
             "Nom": [c[0][0] for c in sorted_general_classement],
             "Niveau": [c[0][1] for c in sorted_general_classement],
             "Sexe": [c[0][2] for c in sorted_general_classement],
-            "26.1": [
-                scores_details[c[0]].get("26.1", "-") for c in sorted_general_classement
-            ],
-            "26.2": [
-                scores_details[c[0]].get("26.2", "-") for c in sorted_general_classement
-            ],
-            "26.3": [
-                scores_details[c[0]].get("26.3", "-") for c in sorted_general_classement
-            ],
+            "26.1": [scores_details[c[0]].get("26.1", "-") for c in sorted_general_classement],
+            "26.2": [scores_details[c[0]].get("26.2", "-") for c in sorted_general_classement],
+            "26.3": [scores_details[c[0]].get("26.3", "-") for c in sorted_general_classement],
             "Points Totaux": [c[1] for c in sorted_general_classement],
         }
     )
 else:
-    classement, scores_details = calculer_classement(
-        wod_selected, sex_selected, level_selected
-    )
+    classement, scores_details = calculer_classement(wod_selected, sex_selected, level_selected)
 
     for (level, sex), athletes in classement.items():
         st.subheader(f"Classement {level} - {sex}")
         sorted_classement = [
-            (name, scores_details[(name, level, sex)][wod_selected])
-            for name, _ in athletes
+            (name, scores_details[(name, level, sex)][wod_selected]) for name, _ in athletes
         ]
         st.table(
             {
