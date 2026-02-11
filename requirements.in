@@ -1,6 +1,7 @@
 streamlit
-datetime
 sqlalchemy
+psycopg2-binary
+werkzeug
 numpy
 pandas
 plotly-express

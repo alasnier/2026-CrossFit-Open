@@ -1,36 +1,37 @@
 # 2026 CrossFit Games Open — Box Interne
 
-Ce projet permet d’organiser un **Open interne** à la box :
-- **Inscription** et **saisie des scores** par les athlètes
-- **Classements** par sexe / niveau (RX, Scaled, Coach)
-- **Stats** et percentiles rapides
+Application de suivi des scores pour l'Open CrossFit 2026, optimisée pour une gestion interne en box.
 
-**Fenêtre 2026** : 26 fév. → 16 mars 2026 (3 semaines, 3 WODs).
+## Fonctionnalités
+- **Authentification** : Inscription et gestion de profil (Sexe, Niveau RX/Scaled, Catégorie d'âge).
+- **Saisie des Scores** : Interface dédiée pour les WODs 26.1, 26.2 et 26.3 avec validation des formats (Reps ou Temps/CAP).
+- **Classement Dynamique** : Leaderboard filtrable par sexe et niveau, incluant un classement général (Overall) basé sur les points.
+- **Statistiques Avancées** : Visualisation de la distribution des scores (percentiles) et analyses par catégorie.
 
-## Stack technique
-- **Frontend/UX** : [Streamlit](https://streamlit.io) (Python)
-- **Base de données** : Postgres **managed** (Neon ou Supabase, Free tier)
-- **CI/CD** : GitHub Actions (lint, audit deps, PR auto)
-- **Agents IA** : LangGraph + API Gemini pour générer des PRs (plan/diffs)
+## Stack Technique
+- **Framework** : [Streamlit](https://streamlit.io)
+- **Base de Données** : [Neon Postgres 17](https://neon.tech) (Serverless)
+- **ORM** : SQLAlchemy 2.0
+- **Analyse de données** : Pandas, Numpy, Plotly
 
-## Démo (vidéo)
-- 🎥 *Vidéo de démonstration* : [Lien YouTube/Loom]  
-  > Astuce : dépose aussi un MP4 (≤25–50 Mo) dans `assets/demo/` ou en **GitHub Release**, puis `st.video(URL)` côté Streamlit.
+## Configuration & Déploiement
 
-## Démarrage local
-```bash
-python -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-export STREAMLIT_SECRETS='{"database":{"url":"postgresql://...sslmode=require"}}'
-streamlit run Home.py
+### Base de données
+L'application utilise Neon Postgres. La structure des tables et les données initiales (WODs) sont créées automatiquement au premier démarrage.
+
+**Secrets requis (Streamlit Cloud ou .streamlit/secrets.toml) :**
+```toml
+[database]
+url = "postgresql://user:password@ep-xxx.aws.neon.tech/neondb?sslmode=require"
 ```
 
-## Déploiement
+### Installation locale
+1. Cloner le dépôt.
+2. Installer les dépendances : `pip install -r requirements.txt` (généré via `pip-compile requirements.in`).
+3. Configurer la variable d'environnement `DATABASE_URL` ou le fichier `secrets.toml`.
+4. Lancer : `streamlit run Home.py`.
 
-Secrets (DB, clés API) via Streamlit Cloud / GitHub Secrets.
-Ne pas committer de secrets (voir section sécurité).
-
-Sécurité
-
-Les clés API sont stockées en secrets (CI/Cloud).
-En cas de fuite : rotation immédiate + purge d’historique Git. (Guide GitHub)
+## Sécurité
+- Mots de passe hachés via PBKDF2 (Werkzeug).
+- Connexions DB sécurisées (SSL requis).
+- Isolation des sessions via SQLAlchemy.
