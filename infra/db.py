@@ -21,15 +21,13 @@ _BOOTSTRAPPED: bool = False
 
 
 def _db_url() -> str:
-    # 1) Streamlit secrets  2) fallback os.getenv
     url = None
     try:
         if st is not None:
-            url = st.secrets.get("database", {}).get("url")  # type: ignore
+            url = st.secrets["database"]["url"]
     except Exception:
         pass
     return url or os.getenv("DATABASE_URL", "")
-
 
 def get_engine() -> Engine:
     global _ENGINE, _SESSION_FACTORY
