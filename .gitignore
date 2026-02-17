@@ -6,6 +6,7 @@ __pycache__/
 *.pyd
 .Python
 env/
+.env
 venv/
 .venv/
 uv_venv/ # Si votre environnement uv est dans ce dossier

@@ -1,4 +1,20 @@
+# Home.py
 import streamlit as st
+
+from auth_utils import is_authenticated, show_auth_status
+
+# Affiche le statut de connexion dans la sidebar au début de chaque page
+show_auth_status()
+
+# --- Protection de la page ---
+# Si l'utilisateur n'est pas connecté, on arrête l'exécution de la page ici
+if not is_authenticated():
+    st.warning("Veuillez vous connecter pour accéder à cette page.")
+    st.stop()
+
+# --- Contenu de la page d'accueil (uniquement visible si connecté) ---
+st.title("Page d'Accueil")
+st.write(f"Bienvenue sur la page d'accueil, {st.session_state.user['name']}!")
 
 from infra.db import get_session
 from pages.Authentification import Score, User, Wod
@@ -43,8 +59,8 @@ def calculer_classement(wod: str, sex: str, level: str):
     wod_type = wod_meta.type if wod_meta else "reps"
 
     classement, raw_scores = {}, {}
-    for name, level, sex, score in rows:
-        raw_scores.setdefault((name, level, sex), {})[wod] = score
+    for name, u_level, u_sex, score in rows:
+        raw_scores.setdefault((name, u_level, u_sex), {})[wod] = score
         if wod_type == "time":
             secs = _score_to_seconds(score)
             classement.setdefault((level, sex), []).append(

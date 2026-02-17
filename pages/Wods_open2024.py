@@ -1,5 +1,20 @@
 import streamlit as st
 
+from auth_utils import show_auth_status
+
+# CORRECTION: Déplacer en haut
+st.set_page_config(
+    page_title="Wods open2024",
+    layout="wide",
+    page_icon="2024",
+)
+
+show_auth_status()
+
+
+# --- Contenu de la page d'accueil (uniquement visible si connecté) ---
+st.title("Wods open2024")
+
 # Config default settings of the page.
 
 

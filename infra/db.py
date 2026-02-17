@@ -85,9 +85,9 @@ def bootstrap_after_create() -> None:
             text("""
             INSERT INTO wods (wod, label, type, timecap_seconds)
             VALUES 
-              ('26.1', 'Open 26.1', 'reps', NULL),
-              ('26.2', 'Open 26.2', 'time', 12*60),
-              ('26.3', 'Open 26.3', 'time', 20*60)
+                ('26.1', 'Open 26.1', 'reps', NULL),
+                ('26.2', 'Open 26.2', 'time', 720),
+                ('26.3', 'Open 26.3', 'time', 1200)
             ON CONFLICT (wod) DO NOTHING;
         """)
         )
