@@ -4,7 +4,7 @@ from auth_utils import show_auth_status
 
 # CORRECTION: Déplacer en haut
 st.set_page_config(
-    page_title="Wods open2025",
+    page_title="2025 Open WODs",
     layout="wide",
     page_icon="2025",
 )
