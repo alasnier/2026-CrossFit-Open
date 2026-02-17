@@ -4,7 +4,6 @@ from datetime import datetime
 import streamlit as st
 from werkzeug.security import check_password_hash, generate_password_hash
 
-# Imports propres depuis la nouvelle structure
 from infra.db import bootstrap_after_create, get_engine, get_session
 from infra.models import Base, User
 
@@ -29,7 +28,7 @@ if st.session_state.get("user"):
 
 st.subheader("S'inscrire")
 with st.form(key="register_form"):
-    name = st.text_input("Nom complet : Prenom NOM", key="register_name")
+    name = st.text_input("Nom complet", key="register_name")
     email = st.text_input("Email", key="register_email")
     password = st.text_input("Mot de passe", type="password", key="register_password")
     sex = st.radio("Sexe", ["Male", "Female"], key="register_sex")
@@ -57,14 +56,18 @@ with st.form(key="register_form"):
                         email=email,
                         password=hashed_password,
                         sex=sex,
-                        birth_year=birth_year,
+                        birth_year=int(birth_year),
                         level=level,
                         category=category,
                         age=age,
                     )
                     session.add(new_user)
+                    # FIX : commit explicite AVANT st.switch_page
+                    # st.switch_page interrompt l'exécution immédiatement,
+                    # empêchant le context manager de faire son commit automatique.
+                    session.commit()
                     st.session_state["user"] = {"name": name, "email": email}
-                    st.switch_page("Home.py")
+            st.switch_page("Home.py")
 
 st.subheader("Ou se connecter")
 with st.form(key="login_form"):
@@ -77,6 +80,8 @@ with st.form(key="login_form"):
             user = session.query(User).filter_by(email=email_login).first()
             if user and check_password_hash(user.password, password_login):
                 st.session_state["user"] = {"name": user.name, "email": user.email}
-                st.switch_page("Home.py")
             else:
                 st.error("Email ou mot de passe incorrect.")
+
+        if st.session_state.get("user"):
+            st.switch_page("Home.py")
