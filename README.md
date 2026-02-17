@@ -2,6 +2,9 @@
 
 Application de suivi des scores pour l'Open CrossFit 2026, optimisée pour une gestion interne en box.
 
+
+https://2026-crossfit-open.streamlit.app
+
 ## Fonctionnalités
 - **Authentification** : Inscription et gestion de profil (Sexe, Niveau RX/Scaled, Catégorie d'âge).
 - **Saisie des Scores** : Interface dédiée pour les WODs 26.1, 26.2 et 26.3 avec validation des formats (Reps ou Temps/CAP).
