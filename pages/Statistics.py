@@ -1,36 +1,19 @@
+# pages/Statistics.py
 import numpy as np
 import pandas as pd
 import plotly.express as px
-
-# Home.py
 import streamlit as st
 
-from auth_utils import is_authenticated, show_auth_status
-
-# Affiche le statut de connexion dans la sidebar au début de chaque page
-show_auth_status()
-
-# --- Protection de la page ---
-# Si l'utilisateur n'est pas connecté, on arrête l'exécution de la page ici
-if not is_authenticated():
-    st.warning("Veuillez vous connecter pour accéder à cette page.")
-    st.stop()
-
-# --- Contenu de la page d'accueil (uniquement visible si connecté) ---
-st.title("Page d'Accueil")
-st.write(f"Bienvenue sur la page d'accueil, {st.session_state.user['name']}!")
-
+from auth_utils import show_auth_status
 from infra.db import get_session
-from pages.Authentification import Score, User, Wod
+from infra.models import Score, User, Wod
+
+show_auth_status()
 
 st.title("Statistiques des Scores des WODs")
 
 
 def normalize_for_stats(value: str, wod_type: str, timecap: int | None) -> float | None:
-    """
-    - 'time' : renvoie des secondes (float), comprend 'MM:SS' et 'CAP:XX' (cap + XX).
-    - 'reps' : renvoie un entier (float) représentant les répétitions.
-    """
     if wod_type == "time":
         if not value:
             return None
@@ -104,8 +87,6 @@ female = subset[subset["Sexe"] == "Female"]["Score"].dropna()
 
 is_time = subset["Type"].iloc[0] == "time"
 
-# Pour les WODs 'time' : meilleur score = plus petit → inverser les percentiles
-# afin que le graphe aille "du meilleur (bas) au moins bon (haut)"
 if is_time:
     male_percentiles = (
         np.percentile(male, 100 - percentiles)
