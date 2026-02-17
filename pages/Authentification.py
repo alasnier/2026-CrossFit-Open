@@ -29,7 +29,7 @@ if st.session_state.get("user"):
 
 st.subheader("S'inscrire")
 with st.form(key="register_form"):
-    name = st.text_input("Nom complet", key="register_name")
+    name = st.text_input("Nom complet : Prenom NOM", key="register_name")
     email = st.text_input("Email", key="register_email")
     password = st.text_input("Mot de passe", type="password", key="register_password")
     sex = st.radio("Sexe", ["Male", "Female"], key="register_sex")

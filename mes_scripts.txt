@@ -1,0 +1,3137 @@
+.env
+
+DATABASE_URL = 'postgresql://neondb_owner:xxxx@ep-icy-mouse-agr5pjvc-pooler.c-2.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
+
+.gitignore
+
+obtain_gemini_models_list.py
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+uv_venv/ # Si votre environnement uv est dans ce dossier
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+
+auth_utils.py
+
+# auth_utils.py
+
+import streamlit as st
+
+
+def show_auth_status():
+    """
+    Affiche le statut de connexion dans la barre latérale.
+    - Si l'utilisateur est connecté, affiche son nom et un bouton de déconnexion.
+    - Si l'utilisateur n'est pas connecté, affiche un lien vers la page de connexion.
+    """
+    # Initialise la session si elle n'existe pas
+    if "user" not in st.session_state:
+        st.session_state.user = None
+
+    # Logique d'affichage dans la barre latérale
+    if st.session_state.user:
+        st.sidebar.write(f"Connecté en tant que : **{st.session_state.user['name']}**")
+        if st.sidebar.button("Se déconnecter"):
+            st.session_state.user = None
+            # Redirige vers la page de connexion après la déconnexion
+            st.switch_page("pages/Authentification.py")
+    else:
+        st.sidebar.write("Vous n'êtes pas connecté.")
+        st.sidebar.page_link("pages/Authentification.py", label="Se connecter / S'inscrire")
+
+
+def is_authenticated():
+    """Vérifie si un utilisateur est authentifié."""
+    return st.session_state.user is not None
+
+
+====================================================================================================
+
+crossfit-open-2025.png
+
+BINARY CONTENT (not displayed)
+
+crossfit-open-2026.png
+
+BINARY CONTENT (not displayed)
+
+Home.py
+
+# Home.py
+import streamlit as st
+
+from auth_utils import show_auth_status
+
+st.set_page_config(
+    page_title="2026 Crossfit Games Open",
+    layout="wide",
+    page_icon="💪",
+)
+
+show_auth_status()
+
+st.header("2026 CrossFit Games Open")
+st.markdown("Alex Lasnier - [LinkedIn](https://www.linkedin.com/in/alex-lasnier)")
+
+st.subheader("3 WEEKS - 3 WORKOUTS")
+st.markdown(
+    "Workouts are released on Thursdays at 12 p.m. (PT) / 09 p.m. (Paris Hour) and scores are due by Monday at 5 p.m. (PT) / 2 a.m. (Paris Hour)."
+)
+
+left_co, cent_co, last_co = st.columns(3)
+with cent_co:
+    st.image("crossfit-open-2026.png")
+
+st.header("Next stage ⇒ Semifinals")
+st.markdown("The top athletes and teams from the Open.")
+
+
+====================================================================================================
+
+mes_scripts.txt
+
+
+
+====================================================================================================
+
+obtain_gemini_models_list.py
+
+from google import genai
+
+client = genai.Client(api_key="xxxxxx-KNM")
+for m in client.models.list():
+    print(m.name)
+
+
+====================================================================================================
+
+pyproject.toml
+
+[tool.ruff]
+line-length = 100
+fix = true
+
+[tool.ruff.lint]
+select = ["E","F","UP","B","SIM","I"]
+
+
+====================================================================================================
+
+README.md
+
+# 2026 CrossFit Games Open — Box Interne
+
+Application de suivi des scores pour l'Open CrossFit 2026, optimisée pour une gestion interne en box.
+
+
+https://2026-crossfit-open.streamlit.app
+
+## Fonctionnalités
+- **Authentification** : Inscription et gestion de profil (Sexe, Niveau RX/Scaled, Catégorie d'âge).
+- **Saisie des Scores** : Interface dédiée pour les WODs 26.1, 26.2 et 26.3 avec validation des formats (Reps ou Temps/CAP).
+- **Classement Dynamique** : Leaderboard filtrable par sexe et niveau, incluant un classement général (Overall) basé sur les points.
+- **Statistiques Avancées** : Visualisation de la distribution des scores (percentiles) et analyses par catégorie.
+
+## Stack Technique
+- **Framework** : [Streamlit](https://streamlit.io)
+- **Base de Données** : [Neon Postgres 17](https://neon.tech) (Serverless)
+- **ORM** : SQLAlchemy 2.0
+- **Analyse de données** : Pandas, Numpy, Plotly
+
+## Configuration & Déploiement
+
+### Base de données
+L'application utilise Neon Postgres. La structure des tables et les données initiales (WODs) sont créées automatiquement au premier démarrage.
+
+**Secrets requis (Streamlit Cloud ou .streamlit/secrets.toml) :**
+```toml
+[database]
+url = "postgresql://user:password@ep-xxx.aws.neon.tech/neondb?sslmode=require"
+```
+
+### Installation locale
+1. Cloner le dépôt.
+2. Installer les dépendances : `pip install -r requirements.txt` (généré via `pip-compile requirements.in`).
+3. Configurer la variable d'environnement `DATABASE_URL` ou le fichier `secrets.toml`.
+4. Lancer : `streamlit run Home.py`.
+
+## Sécurité
+- Mots de passe hachés via PBKDF2 (Werkzeug).
+- Connexions DB sécurisées (SSL requis).
+- Isolation des sessions via SQLAlchemy.
+
+
+====================================================================================================
+
+requirements.in
+
+streamlit
+sqlalchemy
+psycopg2-binary
+werkzeug
+numpy
+pandas
+plotly
+
+
+====================================================================================================
+
+requirements.txt
+
+# This file was autogenerated by uv via the following command:
+#    uv pip compile requirements.in -o requirements.txt
+altair==5.5.0
+    # via streamlit
+attrs==25.1.0
+    # via
+    #   jsonschema
+    #   referencing
+blinker==1.9.0
+    # via streamlit
+cachetools==5.5.1
+    # via streamlit
+certifi==2025.1.31
+    # via requests
+charset-normalizer==3.4.1
+    # via requests
+click==8.1.8
+    # via streamlit
+gitdb==4.0.12
+    # via gitpython
+gitpython==3.1.44
+    # via streamlit
+greenlet==3.1.1
+    # via sqlalchemy
+idna==3.10
+    # via requests
+jinja2==3.1.5
+    # via
+    #   altair
+    #   pydeck
+jsonschema==4.23.0
+    # via altair
+jsonschema-specifications==2024.10.1
+    # via jsonschema
+markdown-it-py==3.0.0
+    # via rich
+markupsafe==3.0.2
+    # via
+    #   jinja2
+    #   werkzeug
+mdurl==0.1.2
+    # via markdown-it-py
+narwhals==1.26.0
+    # via
+    #   altair
+    #   plotly
+numpy==2.2.2
+    # via
+    #   -r requirements.in
+    #   pandas
+    #   patsy
+    #   plotly-express
+    #   pydeck
+    #   scipy
+    #   statsmodels
+    #   streamlit
+packaging==24.2
+    # via
+    #   altair
+    #   plotly
+    #   statsmodels
+    #   streamlit
+pandas==2.2.3
+    # via
+    #   -r requirements.in
+    #   plotly-express
+    #   statsmodels
+    #   streamlit
+patsy==1.0.2
+    # via
+    #   plotly-express
+    #   statsmodels
+pillow==11.1.0
+    # via streamlit
+plotly==6.0.0
+    # via plotly-express
+plotly-express==0.4.1
+    # via -r requirements.in
+protobuf==5.29.3
+    # via streamlit
+psycopg2-binary==2.9.11
+    # via -r requirements.in
+pyarrow==19.0.0
+    # via streamlit
+pydeck==0.9.1
+    # via streamlit
+pygments==2.19.1
+    # via rich
+python-dateutil==2.9.0.post0
+    # via pandas
+pytz==2025.1
+    # via pandas
+referencing==0.36.2
+    # via
+    #   jsonschema
+    #   jsonschema-specifications
+requests==2.32.3
+    # via streamlit
+rich==13.9.4
+    # via streamlit
+rpds-py==0.22.3
+    # via
+    #   jsonschema
+    #   referencing
+scipy==1.17.0
+    # via
+    #   plotly-express
+    #   statsmodels
+six==1.17.0
+    # via python-dateutil
+smmap==5.0.2
+    # via gitdb
+sqlalchemy==2.0.38
+    # via -r requirements.in
+statsmodels==0.14.6
+    # via plotly-express
+streamlit==1.42.0
+    # via -r requirements.in
+tenacity==9.0.0
+    # via streamlit
+toml==0.10.2
+    # via streamlit
+tornado==6.4.2
+    # via streamlit
+typing-extensions==4.12.2
+    # via
+    #   altair
+    #   referencing
+    #   sqlalchemy
+    #   streamlit
+tzdata==2025.1
+    # via pandas
+urllib3==2.3.0
+    # via requests
+watchdog==6.0.0
+    # via streamlit
+werkzeug==3.1.5
+    # via -r requirements.in
+
+
+====================================================================================================
+
+.github\workflows\agent_pr.yml
+
+name: Agent Team - Review & PR
+on:
+  workflow_dispatch:
+    inputs:
+      spec_path:
+        description: 'Chemin de la SPEC'
+        required: false
+        default: 'specs/feature-template.yaml'
+
+jobs:
+  run-team:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Tools (Agent + Ops)
+        run: |
+          python -m pip install --upgrade pip
+          # Installation des outils IA + l'outil 'uv' pour la compil des deps
+          pip install ruff bandit langgraph langchain google-genai pip-audit pytest uv
+
+      # ---------------------------------------------------------
+      # ÉTAPE 1 : L'AGENT (Plan & Code)
+      # ---------------------------------------------------------
+      - name: Agent Team (Plan & Code)
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        run: |
+          SPEC="${{ github.event.inputs.spec_path }}"
+          if [ -z "$SPEC" ]; then SPEC="specs/feature-template.yaml"; fi
+          python orchestrator/langgraph_team.py "$SPEC"
+
+      # ---------------------------------------------------------
+      # ÉTAPE 2 : APPLICATION & COMPILATION (Ops Séquentiel)
+      # ---------------------------------------------------------
+      - name: Apply Diffs & Compile Deps
+        run: |
+          git config user.email "agent-team[bot]@users.noreply.github.com"
+          git config user.name "agent-team[bot]"
+          BR="agent/update-${{ github.run_id }}"
+          git checkout -b "$BR"
+
+          # 1. Appliquer les modifications de code de l'agent
+          if [ -f diffs.json ]; then
+            python .github/workflows/scripts/apply_diffs.py
+          fi
+
+          # 2. Compilation auto des requirements (Si requirements.in existe)
+          # C'est ici qu'on résout ton problème de synchro
+          if [ -f requirements.in ]; then
+             echo "Compiling requirements with uv..."
+             uv pip compile requirements.in -o requirements.txt
+          fi
+
+      # ---------------------------------------------------------
+      # ÉTAPE 3 : AUDIT & LINT (Qualité après modifs)
+      # ---------------------------------------------------------
+      - name: Post-Code Quality Check
+        run: |
+          # Lint & Fix auto (Black/Isort via Ruff)
+          ruff format . || true
+          ruff check --fix . || true
+          
+          # Audit de sécurité
+          if [ -f requirements.txt ]; then
+            pip-audit -r requirements.txt -f json -o pip_audit.json || true
+          fi
+
+      # ---------------------------------------------------------
+      # ÉTAPE 4 : COMMIT & PR
+      # ---------------------------------------------------------
+      - name: Push & Create PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # On ajoute tout : code agent + requirements compilés + fixes du linter
+          git add -A
+          
+          if [[ -n $(git status -s) ]]; then
+            git commit -m "feat(agent): update 2026 (auto-compiled & linted)"
+            git push --force --set-upstream origin "agent/update-${{ github.run_id }}"
+            
+            gh pr create -B main -H "agent/update-${{ github.run_id }}" \
+              --title "🤖 Agent Team: Update 2026" \
+              --body "PR générée automatiquement.\n\n- Scope: ${{ github.event.inputs.spec_path }}\n- Deps: Compilées via uv\n- Style: Corrigé via Ruff" \
+              || echo "PR déjà existante."
+          else
+            echo "Aucun changement détecté."
+          fi
+
+====================================================================================================
+
+.github\workflows\scripts\apply_diffs.py
+
+# scripts/apply_diffs.py
+import json
+import os
+
+if os.path.exists("diffs.json"):
+    diffs = json.load(open("diffs.json", encoding="utf-8"))
+    for d in diffs:
+        p = d["path"]
+        if os.path.dirname(p):
+            os.makedirs(os.path.dirname(p), exist_ok=True)
+        with open(p, "w", encoding="utf-8") as f:
+            f.write(d["content_after"])
+    print(f"[apply_diffs] {len(diffs)} fichier(s) appliqué(s)")
+else:
+    print("[apply_diffs] Aucun diffs.json trouvé")
+
+
+====================================================================================================
+
+.pytest_cache\.gitignore
+
+# Created by pytest automatically.
+*
+
+
+.pytest_cache\CACHEDIR.TAG
+
+Signature: 8a477f597d28d172789f06886806bc55
+# This file is a cache directory tag created by pytest.
+# For information about cache directory tags, see:
+#	https://bford.info/cachedir/spec.html
+
+
+.pytest_cache\README.md
+
+# pytest cache directory #
+
+This directory contains data from the pytest's cache plugin,
+which provides the `--lf` and `--ff` options, as well as the `cache` fixture.
+
+**Do not** commit this to version control.
+
+See [the docs](https://docs.pytest.org/en/stable/how-to/cache.html) for more information.
+
+
+====================================================================================================
+
+.pytest_cache\v\cache\lastfailed
+
+{
+  "tests/test_e2e.py::TestAuthentification::test_logout_flow": true,
+  "tests/test_e2e.py::TestAuthFlow::test_login_flow_redirects_to_home[chromium]": true,
+  "tests/test_e2e.py::TestAuthFlow::test_logout_flow_redirects_to_auth_page[chromium]": true,
+  "tests/test_e2e.py::TestPageProtection::test_can_access_protected_page_when_logged_in[chromium]": true,
+  "tests/test_e2e.py::TestPageProtection::test_home_page_requires_auth[chromium]": true
+}
+
+.pytest_cache\v\cache\nodeids
+
+[
+  "tests/test_e2e.py::TestAuthFlow::test_auth_page_loads[chromium]",
+  "tests/test_e2e.py::TestAuthFlow::test_login_flow_redirects_to_home[chromium]",
+  "tests/test_e2e.py::TestAuthFlow::test_logout_flow_redirects_to_auth_page[chromium]",
+  "tests/test_e2e.py::TestAuthFlow::test_wrong_password_shows_error[chromium]",
+  "tests/test_e2e.py::TestAuthentification::test_auth_page_loads",
+  "tests/test_e2e.py::TestAuthentification::test_duplicate_email_shows_error",
+  "tests/test_e2e.py::TestAuthentification::test_full_register_flow",
+  "tests/test_e2e.py::TestAuthentification::test_login_flow",
+  "tests/test_e2e.py::TestAuthentification::test_logout_flow",
+  "tests/test_e2e.py::TestAuthentification::test_register_empty_submit_shows_error",
+  "tests/test_e2e.py::TestAuthentification::test_register_form_present",
+  "tests/test_e2e.py::TestAuthentification::test_wrong_password_shows_error",
+  "tests/test_e2e.py::TestChangePassword::test_password_mismatch",
+  "tests/test_e2e.py::TestChangePassword::test_wrong_old_password",
+  "tests/test_e2e.py::TestClassement::test_classement_page_loads",
+  "tests/test_e2e.py::TestClassement::test_filters_present",
+  "tests/test_e2e.py::TestClassement::test_no_exception_on_load",
+  "tests/test_e2e.py::TestClassement::test_overall_option_available",
+  "tests/test_e2e.py::TestHomePage::test_sidebar_present",
+  "tests/test_e2e.py::TestHomePage::test_three_weeks_present",
+  "tests/test_e2e.py::TestHomePage::test_title_visible",
+  "tests/test_e2e.py::TestHomePage::test_welcome_heading",
+  "tests/test_e2e.py::TestPageProtection::test_can_access_protected_page_when_logged_in[chromium]",
+  "tests/test_e2e.py::TestPageProtection::test_home_page_requires_auth[chromium]",
+  "tests/test_e2e.py::TestPageProtection::test_saisie_scores_page_requires_auth[chromium]",
+  "tests/test_e2e.py::TestSaisieScores::test_invalid_time_format_shows_error",
+  "tests/test_e2e.py::TestSaisieScores::test_score_page_requires_auth",
+  "tests/test_e2e.py::TestSaisieScores::test_submit_cap_score_26_3",
+  "tests/test_e2e.py::TestSaisieScores::test_submit_reps_score_26_1",
+  "tests/test_e2e.py::TestSaisieScores::test_submit_time_score_26_2",
+  "tests/test_e2e.py::TestSaisieScores::test_wod_selector_visible_when_logged_in",
+  "tests/test_e2e.py::TestStatistics::test_no_exception_on_load",
+  "tests/test_e2e.py::TestStatistics::test_statistics_page_loads",
+  "tests/test_e2e.py::TestWodPages::test_wods_2024_page_loads",
+  "tests/test_e2e.py::TestWodPages::test_wods_2025_page_loads",
+  "tests/test_e2e.py::TestWodPages::test_wods_2026_page_loads",
+  "tests/test_integration.py::TestClassementQuery::test_classement_reps_desc_order",
+  "tests/test_integration.py::TestClassementQuery::test_classement_reps_filters_sex_level",
+  "tests/test_integration.py::TestClassementQuery::test_no_results_returns_empty",
+  "tests/test_integration.py::TestScoreOperations::test_insert_cap_score",
+  "tests/test_integration.py::TestScoreOperations::test_insert_reps_score",
+  "tests/test_integration.py::TestScoreOperations::test_insert_time_score",
+  "tests/test_integration.py::TestScoreOperations::test_update_existing_score",
+  "tests/test_integration.py::TestUserCRUD::test_create_user",
+  "tests/test_integration.py::TestUserCRUD::test_delete_user_cascades_scores",
+  "tests/test_integration.py::TestUserCRUD::test_duplicate_email_raises",
+  "tests/test_integration.py::TestWodSeed::test_wod_seed_idempotent",
+  "tests/test_integration.py::TestWodSeed::test_wod_timecap_values",
+  "tests/test_unit.py::TestCalculateAgeCategory::test_elite_lower_boundary",
+  "tests/test_unit.py::TestCalculateAgeCategory::test_elite_upper_boundary",
+  "tests/test_unit.py::TestCalculateAgeCategory::test_masters_boundary",
+  "tests/test_unit.py::TestCalculateAgeCategory::test_masters_senior",
+  "tests/test_unit.py::TestCalculateAgeCategory::test_teenager",
+  "tests/test_unit.py::TestCalculateAgeCategory::test_teenager_boundary",
+  "tests/test_unit.py::TestClassementSort::test_overall_points_cumulation",
+  "tests/test_unit.py::TestClassementSort::test_reps_sort_descending",
+  "tests/test_unit.py::TestClassementSort::test_time_sort_ascending",
+  "tests/test_unit.py::TestClassementSort::test_time_tie_stable",
+  "tests/test_unit.py::TestNormalizeForStats::test_reps_float_string_invalid",
+  "tests/test_unit.py::TestNormalizeForStats::test_reps_integer_string",
+  "tests/test_unit.py::TestNormalizeForStats::test_reps_invalid_returns_none",
+  "tests/test_unit.py::TestNormalizeForStats::test_reps_zero",
+  "tests/test_unit.py::TestNormalizeForStats::test_time_cap_format",
+  "tests/test_unit.py::TestNormalizeForStats::test_time_empty_returns_none",
+  "tests/test_unit.py::TestNormalizeForStats::test_time_invalid_returns_none",
+  "tests/test_unit.py::TestNormalizeForStats::test_time_mm_ss",
+  "tests/test_unit.py::TestNormalizeForStats::test_time_no_timecap_cap_format",
+  "tests/test_unit.py::TestNormalizeTimeScore::test_cap_format_adds_to_timecap",
+  "tests/test_unit.py::TestNormalizeTimeScore::test_cap_lowercase",
+  "tests/test_unit.py::TestNormalizeTimeScore::test_cap_with_leading_zeros",
+  "tests/test_unit.py::TestNormalizeTimeScore::test_cap_zero",
+  "tests/test_unit.py::TestNormalizeTimeScore::test_empty_returns_none",
+  "tests/test_unit.py::TestNormalizeTimeScore::test_invalid_format_returns_none",
+  "tests/test_unit.py::TestNormalizeTimeScore::test_normal_time_hh_mm_ss",
+  "tests/test_unit.py::TestNormalizeTimeScore::test_normal_time_mm_ss",
+  "tests/test_unit.py::TestNormalizeTimeScore::test_whitespace_handled",
+  "tests/test_unit.py::TestScoreToSeconds::test_empty_string_returns_none",
+  "tests/test_unit.py::TestScoreToSeconds::test_exact_timecap_12min",
+  "tests/test_unit.py::TestScoreToSeconds::test_exact_timecap_20min",
+  "tests/test_unit.py::TestScoreToSeconds::test_hh_mm_ss_format",
+  "tests/test_unit.py::TestScoreToSeconds::test_invalid_returns_none",
+  "tests/test_unit.py::TestScoreToSeconds::test_mm_ss_format",
+  "tests/test_unit.py::TestScoreToSeconds::test_single_value_returns_none",
+  "tests/test_unit.py::TestScoreToSeconds::test_zero_minutes"
+]
+
+agents\AGENTS.md
+
+# Agents du projet CrossFit Open 2026
+
+## @planner
+Objectif : Lire l'issue, produire une SPEC exécutable (YAML) avec tâches, fichiers à modifier, critères d'acceptation.
+Commandes dispo : `pytest -q`, `ruff check --fix`, `bandit -r . -q`, `safety scan -r requirements.txt`.
+
+## @coder
+Objectif : Implémenter les changements (création/modif. de fichiers), écrire/mettre à jour les tests, respecter le style.
+Interdits : ne jamais créer/commiter de secrets; ne pas modifier `credentials/` ni fichiers .env.
+
+## @security
+Objectif : Exécuter Ruff/Bandit/Safety, produire un rapport et proposer des remédiations (patchs).
+
+## @docs
+Objectif : Mettre à jour README/CHANGELOG et sections d’explication utilisateur.
+
+## Frontières & Style
+- Formatage : `ruff format`; Lint : règles E,F,UP,B,SIM,I.
+- Ne pas modifier la CI sans consigne explicite.
+- Ne pas supprimer des tests existants sans justification dans la SPEC.
+
+====================================================================================================
+
+infra\db.py
+
+# infra/db.py
+from __future__ import annotations
+
+import os
+from collections.abc import Iterator
+from contextlib import contextmanager
+
+# Streamlit peut ne pas être dispo en contexte tests -> importer prudemment
+try:
+    import streamlit as st  # type: ignore
+except Exception:  # pragma: no cover
+    st = None  # type: ignore
+
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session, sessionmaker
+
+_ENGINE: Engine | None = None
+_SESSION_FACTORY: sessionmaker | None = None
+_BOOTSTRAPPED: bool = False
+
+
+def _db_url() -> str:
+    # 1) Streamlit secrets  2) fallback os.getenv
+    url = None
+    try:
+        if st is not None:
+            url = st.secrets.get("database", {}).get("url")  # type: ignore
+    except Exception:
+        pass
+    return url or os.getenv("DATABASE_URL", "")
+
+
+def get_engine() -> Engine:
+    global _ENGINE, _SESSION_FACTORY
+    if _ENGINE is None:
+        url = _db_url()
+        if not url:
+            raise RuntimeError(
+                "DATABASE_URL manquant (st.secrets['database']['url'] ou variable d'environnement)."
+            )
+        _ENGINE = create_engine(
+            url,
+            pool_size=5,
+            max_overflow=0,
+            pool_pre_ping=True,
+            pool_recycle=1800,
+            future=True,
+        )
+        _SESSION_FACTORY = sessionmaker(bind=_ENGINE, expire_on_commit=False, future=True)
+    return _ENGINE
+
+
+@contextmanager
+def get_session(readonly: bool = False) -> Iterator[Session]:
+    if _SESSION_FACTORY is None:
+        get_engine()
+    assert _SESSION_FACTORY is not None
+    session = _SESSION_FACTORY()
+    try:
+        if readonly:
+            session.execute(text("SET TRANSACTION READ ONLY"))
+        yield session
+        if not readonly:
+            session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+def bootstrap_after_create() -> None:
+    """
+    Idempotent : insère les WODs 26.x + crée les index si absents.
+    Appelée après Base.metadata.create_all(...).
+    """
+    global _BOOTSTRAPPED
+    if _BOOTSTRAPPED:
+        return
+    engine = get_engine()
+    with engine.begin() as conn:
+        # Seed 'wods' (ON CONFLICT pour idempotence)
+        conn.execute(
+            text("""
+            INSERT INTO wods (wod, label, type, timecap_seconds)
+            VALUES 
+                ('26.1', 'Open 26.1', 'reps', NULL),
+                ('26.2', 'Open 26.2', 'time', 720),
+                ('26.3', 'Open 26.3', 'time', 1200)
+            ON CONFLICT (wod) DO NOTHING;
+        """)
+        )
+
+        # Index idempotents
+        conn.execute(
+            text("CREATE INDEX IF NOT EXISTS idx_scores_user_wod ON scores(user_id, wod);")
+        )
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_users_sex_level ON users(sex, level);"))
+    _BOOTSTRAPPED = True
+
+
+====================================================================================================
+
+infra\models.py
+
+# infra/models.py
+from datetime import datetime
+
+from sqlalchemy import TIMESTAMP, Column, ForeignKey, Integer, String, func
+from sqlalchemy.orm import declarative_base, relationship
+
+Base = declarative_base()
+
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True)
+    name = Column(String(255), nullable=False)
+    email = Column(String(255), unique=True, nullable=False)
+    password = Column(String(255), nullable=False)
+    sex = Column(String(10), nullable=False)
+    birth_year = Column(Integer, nullable=False)
+    level = Column(String(10), nullable=False)
+    category = Column(String(20), nullable=False)
+    _age = Column("age", Integer, nullable=False)
+    scores = relationship("Score", back_populates="user", cascade="all, delete")
+
+    @property
+    def age(self) -> int:
+        return datetime.now().year - self.birth_year
+
+    @age.setter
+    def age(self, value: int):
+        self._age = value
+
+
+class Score(Base):
+    __tablename__ = "scores"
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    wod = Column(String(10), nullable=False)
+    score = Column(String(20), nullable=False)
+    created_at = Column(TIMESTAMP, server_default=func.now())
+    user = relationship("User", back_populates="scores")
+
+
+class Wod(Base):
+    __tablename__ = "wods"
+    wod = Column(String(10), primary_key=True)
+    label = Column(String(100), nullable=False)
+    type = Column(String(10), nullable=False)
+    timecap_seconds = Column(Integer, nullable=True)
+
+
+====================================================================================================
+
+infra\__pycache__\db.cpython-312.pyc
+
+BINARY CONTENT (unlisted extension, could not decode as text)
+
+infra\__pycache__\models.cpython-312.pyc
+
+BINARY CONTENT (unlisted extension, could not decode as text)
+
+orchestrator\langgraph_team.py
+
+# orchestrator/langgraph_team.py (Version simplifiée pour CI Robuste)
+from __future__ import annotations
+
+import json
+import os
+import sys
+import textwrap
+from typing import TypedDict
+
+from google import genai
+from google.genai import types
+from langgraph.graph import StateGraph
+
+
+# ---------- Utils ----------
+def read(path: str) -> str:
+    try:
+        with open(path, encoding="utf-8") as f:
+            return f.read()
+    except Exception:
+        return ""
+
+
+def write_json(path: str, data):
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+# ---------- LLM (google-genai) ----------
+def init_client() -> genai.Client:
+    api_key = os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        raise RuntimeError("GOOGLE_API_KEY is not set")
+    return genai.Client(api_key=api_key)
+
+
+def gemini_json(client: genai.Client, prompt: str) -> dict:
+    # On change de réservoirs pour éviter les erreurs 429 persistantes
+    models_to_try = [
+        "gemini-3-flash-preview",  # Nouvelle génération (Quota souvent distinct)
+        "gemini-1.5-flash",  # Ancienne génération (Le plus de chances d'être dispo)
+        "gemini-exp-1206",  # Modèle expérimental (Quota à part)
+        "gemini-2.0-flash",  # Ton choix initial (en dernier recours)
+    ]
+
+    config = types.GenerateContentConfig(
+        temperature=0.2,
+        response_mime_type="application/json",
+    )
+
+    for model_name in models_to_try:
+        print(f"[gemini] Tentative avec : {model_name}")
+        try:
+            # On ne fait qu'une tentative rapide pour passer au suivant si ça bloque
+            resp = client.models.generate_content(model=model_name, contents=prompt, config=config)
+            print(f"[gemini] Succès avec {model_name} !")
+            return json.loads(resp.text or "{}")
+
+        except Exception as e:
+            err_msg = str(e)
+            if "429" in err_msg or "RESOURCE_EXHAUSTED" in err_msg:
+                # Si le quota journalier est atteint (limit: 0), on n'attend pas, on switch.
+                if "PerDay" in err_msg:
+                    print(f"[gemini] {model_name} : Quota journalier vide. Suivant...")
+                else:
+                    print(f"[gemini] {model_name} : Trop de requêtes. Suivant...")
+                continue
+            else:
+                print(f"[gemini] Erreur sur {model_name}: {err_msg}")
+                continue
+
+    print("[gemini] 🚨 ÉCHEC : Tous les modèles sont épuisés pour aujourd'hui.")
+    return {}
+
+
+# ---------- État partagé ----------
+class State(TypedDict):
+    spec_path: str
+    plan: dict
+    diffs: list[dict]
+
+
+# ---------- Node Unique : Planner + Coder ----------
+def plan_and_code(state: State) -> dict:
+    client = init_client()
+    spec = read(state["spec_path"])
+    agents_rules = read("agents/AGENTS.md")
+
+    # On ne lit que les fichiers pertinents pour limiter les tokens (README ici)
+    # Pour le test, on force la lecture du README et requirements.in
+    target_files = ["README.md", "requirements.in"]
+    file_contents = ""
+    for path in target_files:
+        if os.path.exists(path):
+            file_contents += f"\n--- {path} ---\n{read(path)}\n"
+
+    prompt = textwrap.dedent(f"""
+    Tu es un expert DevOps/Python. Applique la SPEC demandée.
+    Retourne un JSON strict : {{ "diffs": [{{"path": "...", "content_after": "..."}}] }}
+    
+    RÈGLES :
+    1. Si la spec demande de modifier le README, réécris tout le fichier proprement.
+    2. Si 'requirements.in' doit être maj, change-le (mais ne touche PAS à requirements.txt, la CI s'en occupe).
+    
+    SPEC:
+    {spec}
+
+    FICHIERS ACTUELS:
+    {file_contents}
+    """)
+
+    out = gemini_json(client, prompt)
+    return {"diffs": out.get("diffs", [])}
+
+
+# ---------- Graphe Simple ----------
+graph = StateGraph(State)
+graph.add_node("plan_and_code", plan_and_code)
+graph.set_entry_point("plan_and_code")
+graph.set_finish_point("plan_and_code")  # Fin immédiate, la CI gère la suite
+compiled = graph.compile()
+
+if __name__ == "__main__":
+    spec = sys.argv[1] if len(sys.argv) > 1 else "specs/feature-template.yaml"
+    result = compiled.invoke({"spec_path": spec, "diffs": []})
+    write_json("diffs.json", result.get("diffs", []))
+    print("[Agent] Diffs générés dans diffs.json")
+
+
+====================================================================================================
+
+pages\Authentification.py
+
+# pages/Authentification.py
+from datetime import datetime
+
+import streamlit as st
+from werkzeug.security import check_password_hash, generate_password_hash
+
+# Imports propres depuis la nouvelle structure
+from infra.db import bootstrap_after_create, get_engine, get_session
+from infra.models import Base, User
+
+# Création des tables via les modèles importés
+Base.metadata.create_all(get_engine())
+bootstrap_after_create()
+
+
+def calculate_age_category(birth_year, current_year=datetime.now().year):
+    age = current_year - birth_year
+    if age <= 17:
+        category = "Teenager"
+    elif age < 35:
+        category = "Elite"
+    else:
+        category = "Masters"
+    return age, category
+
+
+if st.session_state.get("user"):
+    st.switch_page("Home.py")
+
+st.subheader("S'inscrire")
+with st.form(key="register_form"):
+    name = st.text_input("Nom complet", key="register_name")
+    email = st.text_input("Email", key="register_email")
+    password = st.text_input("Mot de passe", type="password", key="register_password")
+    sex = st.radio("Sexe", ["Male", "Female"], key="register_sex")
+    birth_year = st.number_input(
+        "Année de naissance",
+        min_value=1950,
+        max_value=datetime.now().year,
+        key="register_birth_year",
+    )
+    level = st.radio("Niveau", ["Scaled", "RX"], key="register_level")
+    submit_button = st.form_submit_button("S'inscrire")
+
+    if submit_button:
+        if not all([name, email, password, birth_year]):
+            st.error("Veuillez remplir tous les champs.")
+        else:
+            age, category = calculate_age_category(birth_year)
+            with get_session() as session:
+                if session.query(User).filter_by(email=email).first():
+                    st.error("Cet email est déjà enregistré. Veuillez vous connecter.")
+                else:
+                    hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
+                    new_user = User(
+                        name=name,
+                        email=email,
+                        password=hashed_password,
+                        sex=sex,
+                        birth_year=birth_year,
+                        level=level,
+                        category=category,
+                        age=age,
+                    )
+                    session.add(new_user)
+                    st.session_state["user"] = {"name": name, "email": email}
+                    st.switch_page("Home.py")
+
+st.subheader("Ou se connecter")
+with st.form(key="login_form"):
+    email_login = st.text_input("Email", key="login_email")
+    password_login = st.text_input("Mot de passe", type="password", key="login_password")
+    submit_button_login = st.form_submit_button("Se connecter")
+
+    if submit_button_login:
+        with get_session(readonly=True) as session:
+            user = session.query(User).filter_by(email=email_login).first()
+            if user and check_password_hash(user.password, password_login):
+                st.session_state["user"] = {"name": user.name, "email": user.email}
+                st.switch_page("Home.py")
+            else:
+                st.error("Email ou mot de passe incorrect.")
+
+
+====================================================================================================
+
+pages\Classement.py
+
+# Home.py
+import streamlit as st
+
+from auth_utils import is_authenticated, show_auth_status
+
+# Affiche le statut de connexion dans la sidebar au début de chaque page
+show_auth_status()
+
+# --- Protection de la page ---
+# Si l'utilisateur n'est pas connecté, on arrête l'exécution de la page ici
+if not is_authenticated():
+    st.warning("Veuillez vous connecter pour accéder à cette page.")
+    st.stop()
+
+# --- Contenu de la page d'accueil (uniquement visible si connecté) ---
+st.title("Page d'Accueil")
+st.write(f"Bienvenue sur la page d'accueil, {st.session_state.user['name']}!")
+
+from infra.db import get_session
+from pages.Authentification import Score, User, Wod
+
+st.title("Classement des Athlètes")
+
+sex_selected = st.selectbox("Sexe", ["Male", "Female"], index=0)
+level_selected = st.selectbox("Niveau", ["RX", "Scaled", "Coach"], index=0)
+wod_selected = st.selectbox("Choisissez le WOD", ["Overall", "26.1", "26.2", "26.3"])
+
+
+def _score_to_seconds(score_str: str) -> int | None:
+    try:
+        parts = list(map(int, score_str.split(":")))
+        if len(parts) == 2:
+            return parts[0] * 60 + parts[1]
+        elif len(parts) == 3:
+            return parts[0] * 3600 + parts[1] * 60 + parts[2]
+    except Exception:
+        return None
+    return None
+
+
+def _get_wod(wod: str):
+    with get_session(readonly=True) as s:
+        return s.query(Wod).filter(Wod.wod == wod).first()
+
+
+def calculer_classement(wod: str, sex: str, level: str):
+    with get_session(readonly=True) as s:
+        rows = (
+            s.query(User.name, User.level, User.sex, Score.score)
+            .join(Score, User.id == Score.user_id)
+            .filter(Score.wod == wod, User.sex == sex, User.level == level)
+            .all()
+        )
+
+    if not rows:
+        return {}, {}
+
+    wod_meta = _get_wod(wod)
+    wod_type = wod_meta.type if wod_meta else "reps"
+
+    classement, raw_scores = {}, {}
+    for name, u_level, u_sex, score in rows:
+        raw_scores.setdefault((name, u_level, u_sex), {})[wod] = score
+        if wod_type == "time":
+            secs = _score_to_seconds(score)
+            classement.setdefault((level, sex), []).append(
+                (name, secs if secs is not None else 10**9)
+            )
+        else:
+            try:
+                classement.setdefault((level, sex), []).append((name, int(score)))
+            except Exception:
+                classement.setdefault((level, sex), []).append((name, 0))
+
+    for key in classement:
+        if wod_type == "time":
+            classement[key] = sorted(classement[key], key=lambda x: x[1])  # ASC
+        else:
+            classement[key] = sorted(classement[key], key=lambda x: x[1], reverse=True)  # DESC
+    return classement, raw_scores
+
+
+if wod_selected == "Overall":
+    general_classement, scores_details = {}, {}
+    for wod in ["26.1", "26.2", "26.3"]:
+        wod_classement, wod_scores = calculer_classement(wod, sex_selected, level_selected)
+        for (level, sex), athletes in wod_classement.items():
+            for i, (name, _) in enumerate(athletes):
+                general_classement.setdefault((name, level, sex), 0)
+                general_classement[(name, level, sex)] += i + 1
+                scores_details.setdefault((name, level, sex), {}).update(
+                    wod_scores.get((name, level, sex), {})
+                )
+
+    sorted_general = sorted(general_classement.items(), key=lambda x: x[1])
+    st.table(
+        {
+            "Place": [i + 1 for i in range(len(sorted_general))],
+            "Nom": [c[0][0] for c in sorted_general],
+            "Niveau": [c[0][1] for c in sorted_general],
+            "Sexe": [c[0][2] for c in sorted_general],
+            "26.1": [scores_details[c[0]].get("26.1", "-") for c in sorted_general],
+            "26.2": [scores_details[c[0]].get("26.2", "-") for c in sorted_general],
+            "26.3": [scores_details[c[0]].get("26.3", "-") for c in sorted_general],
+            "Points Totaux": [c[1] for c in sorted_general],
+        }
+    )
+else:
+    classement, scores_details = calculer_classement(wod_selected, sex_selected, level_selected)
+    for (level, sex), athletes in classement.items():
+        st.subheader(f"Classement {level} - {sex}")
+        sorted_classement = [
+            (name, scores_details[(name, level, sex)][wod_selected]) for name, _ in athletes
+        ]
+        st.table(
+            {
+                "Place": [i + 1 for i in range(len(sorted_classement))],
+                "Nom": [c[0] for c in sorted_classement],
+                "Score": [c[1] for c in sorted_classement],
+                "Points": [i + 1 for i in range(len(sorted_classement))],
+            }
+        )
+
+
+====================================================================================================
+
+pages\Saisie_scores.py
+
+# pages/Saisie_scores.py
+
+import streamlit as st
+
+# Assurez-vous que auth_utils.py est à la racine de votre projet
+from auth_utils import is_authenticated, show_auth_status
+
+# Affiche le statut de connexion dans la sidebar au début de chaque page
+show_auth_status()
+
+# --- Protection de la page ---
+# Si l'utilisateur n'est pas connecté, on arrête l'exécution de la page ici
+if not is_authenticated():
+    st.warning("Veuillez vous connecter pour accéder à cette page.")
+    st.stop()  # Très important: arrête l'exécution du script
+
+# --- Contenu de la page de saisie des scores (uniquement visible si connecté) ---
+st.title("Saisie des Scores")
+st.write(f"Bonjour {st.session_state.user['name']}, saisissez vos scores ici.")
+
+# Exemple de formulaire
+with st.form("score_form"):
+    wod = st.selectbox("Choisissez le WOD", ["26.1", "26.2", "26.3"])
+    score = st.text_input("Votre score (ex: 12:34 ou 150)")
+    submitted = st.form_submit_button("Enregistrer le score")
+    if submitted:
+        # Ici, vous ajouteriez la logique pour sauvegarder le score en base de données
+        st.success(f"Score '{score}' pour le WOD {wod} enregistré !")
+
+
+====================================================================================================
+
+pages\Statistics.py
+
+import numpy as np
+import pandas as pd
+import plotly.express as px
+
+# Home.py
+import streamlit as st
+
+from auth_utils import is_authenticated, show_auth_status
+
+# Affiche le statut de connexion dans la sidebar au début de chaque page
+show_auth_status()
+
+# --- Protection de la page ---
+# Si l'utilisateur n'est pas connecté, on arrête l'exécution de la page ici
+if not is_authenticated():
+    st.warning("Veuillez vous connecter pour accéder à cette page.")
+    st.stop()
+
+# --- Contenu de la page d'accueil (uniquement visible si connecté) ---
+st.title("Page d'Accueil")
+st.write(f"Bienvenue sur la page d'accueil, {st.session_state.user['name']}!")
+
+from infra.db import get_session
+from pages.Authentification import Score, User, Wod
+
+st.title("Statistiques des Scores des WODs")
+
+
+def normalize_for_stats(value: str, wod_type: str, timecap: int | None) -> float | None:
+    """
+    - 'time' : renvoie des secondes (float), comprend 'MM:SS' et 'CAP:XX' (cap + XX).
+    - 'reps' : renvoie un entier (float) représentant les répétitions.
+    """
+    if wod_type == "time":
+        if not value:
+            return None
+        s = value.strip().upper()
+        if s.startswith("CAP:"):
+            try:
+                over = int(s.split(":")[1])
+                return float((timecap or 0) + over)
+            except Exception:
+                return None
+        try:
+            parts = list(map(int, s.split(":")))
+            if len(parts) == 2:
+                return float(parts[0] * 60 + parts[1])
+            elif len(parts) == 3:
+                return float(parts[0] * 3600 + parts[1] * 60 + parts[2])
+        except Exception:
+            return None
+        return None
+    else:
+        try:
+            return float(int(value))
+        except Exception:
+            return None
+
+
+# ── Chargement des données ───────────────────────────────────────────────────
+with get_session(readonly=True) as s:
+    rows = (
+        s.query(
+            User.name,
+            User.sex,
+            User.level,
+            User.category,
+            Score.wod,
+            Score.score,
+            Wod.type,
+            Wod.timecap_seconds,
+        )
+        .join(Score, User.id == Score.user_id)
+        .join(Wod, Wod.wod == Score.wod)
+        .all()
+    )
+
+if not rows:
+    st.info("Aucune donnée disponible — soyez le premier à enregistrer un score !")
+    st.stop()
+
+data = pd.DataFrame(
+    rows,
+    columns=["Nom", "Sexe", "Niveau", "Catégorie", "WOD", "ScoreBrut", "Type", "CapSec"],
+)
+data["Score"] = data.apply(
+    lambda r: normalize_for_stats(r["ScoreBrut"], r["Type"], r["CapSec"]), axis=1
+)
+
+# ── Sélection du WOD ────────────────────────────────────────────────────────
+st.subheader("Statistiques par WOD")
+wods = sorted(data["WOD"].unique().tolist())
+wod_selected = st.selectbox("Choisissez un WOD", wods)
+
+subset = data[data["WOD"] == wod_selected].copy()
+if subset.empty:
+    st.info("Aucune donnée pour ce WOD.")
+    st.stop()
+
+# ── Distribution par percentiles ────────────────────────────────────────────
+percentiles = np.arange(0, 101, 10)
+male = subset[subset["Sexe"] == "Male"]["Score"].dropna()
+female = subset[subset["Sexe"] == "Female"]["Score"].dropna()
+
+is_time = subset["Type"].iloc[0] == "time"
+
+# Pour les WODs 'time' : meilleur score = plus petit → inverser les percentiles
+# afin que le graphe aille "du meilleur (bas) au moins bon (haut)"
+if is_time:
+    male_percentiles = (
+        np.percentile(male, 100 - percentiles)
+        if not male.empty
+        else np.zeros_like(percentiles, dtype=float)
+    )
+    female_percentiles = (
+        np.percentile(female, 100 - percentiles)
+        if not female.empty
+        else np.zeros_like(percentiles, dtype=float)
+    )
+else:
+    male_percentiles = (
+        np.percentile(male, percentiles)
+        if not male.empty
+        else np.zeros_like(percentiles, dtype=float)
+    )
+    female_percentiles = (
+        np.percentile(female, percentiles)
+        if not female.empty
+        else np.zeros_like(percentiles, dtype=float)
+    )
+
+df_plot = pd.DataFrame(
+    {
+        "Percentiles": percentiles.tolist() * 2,
+        "Score": np.concatenate([male_percentiles, female_percentiles]),
+        "Sexe": ["Hommes"] * len(percentiles) + ["Femmes"] * len(percentiles),
+    }
+)
+
+y_label = "Temps (secondes)" if is_time else "Répétitions"
+title = f"Distribution des Scores — {wod_selected} ({'temps' if is_time else 'répétitions'})"
+
+fig = px.line(
+    df_plot,
+    x="Percentiles",
+    y="Score",
+    color="Sexe",
+    markers=True,
+    title=title,
+    labels={"Score": y_label, "Percentiles": "Percentile (%)"},
+    color_discrete_map={"Hommes": "#89b385", "Femmes": "#dcaa78"},
+)
+st.plotly_chart(fig, use_container_width=True)
+
+# ── Statistiques complémentaires ────────────────────────────────────────────
+if is_time:
+    st.subheader("Statistiques Temps")
+    time_cap = int(subset["CapSec"].iloc[0] or 0)
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Temps moyen Hommes", f"{male.mean():.0f} s" if not male.empty else "—")
+        if time_cap and not male.empty:
+            pct = (male < time_cap).mean() * 100
+            st.metric("Hommes terminant avant cap", f"{pct:.1f}%")
+    with col2:
+        st.metric("Temps moyen Femmes", f"{female.mean():.0f} s" if not female.empty else "—")
+        if time_cap and not female.empty:
+            pct = (female < time_cap).mean() * 100
+            st.metric("Femmes terminant avant cap", f"{pct:.1f}%")
+
+    if time_cap:
+        st.caption(f"Time cap : {time_cap // 60} min ({time_cap} s)")
+else:
+    st.subheader("Statistiques Répétitions")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Reps moyennes Hommes", f"{male.mean():.0f}" if not male.empty else "—")
+        st.metric("Meilleur score Hommes", f"{male.max():.0f}" if not male.empty else "—")
+    with col2:
+        st.metric("Reps moyennes Femmes", f"{female.mean():.0f}" if not female.empty else "—")
+        st.metric("Meilleur score Femmes", f"{female.max():.0f}" if not female.empty else "—")
+
+# ── Répartition par sexe et niveau ──────────────────────────────────────────
+st.subheader("Répartition des Participants par Sexe et Niveau")
+gender_level_count = subset.groupby(["Sexe", "Niveau"]).size().reset_index(name="Nombre")
+
+fig_level = px.bar(
+    gender_level_count,
+    x="Niveau",
+    y="Nombre",
+    color="Sexe",
+    barmode="group",
+    title="Répartition par sexe et niveau",
+    labels={"Niveau": "Niveau", "Nombre": "Nombre de participants"},
+    color_discrete_map={"Male": "#89b385", "Female": "#dcaa78"},
+)
+st.plotly_chart(fig_level, use_container_width=True)
+
+# ── Nombre total de participants ─────────────────────────────────────────────
+st.caption(
+    f"Total participants sur {wod_selected} : "
+    f"{len(subset['Nom'].unique())} athlètes "
+    f"({len(male)} H / {len(female)} F)"
+)
+
+
+====================================================================================================
+
+pages\Wods_open2024.py
+
+import streamlit as st
+
+from auth_utils import show_auth_status
+
+# CORRECTION: Déplacer en haut
+st.set_page_config(
+    page_title="Wods open2024",
+    layout="wide",
+    page_icon="2024",
+)
+
+show_auth_status()
+
+
+# --- Contenu de la page d'accueil (uniquement visible si connecté) ---
+st.title("Wods open2024")
+
+# Config default settings of the page.
+
+
+st.set_page_config(
+    page_title="Wods open2024",
+    layout="wide",
+    page_icon="2024",
+)
+# st.sidebar.header("2024 Open Wods")
+
+left_co, cent_co, last_co = st.columns(3)
+with left_co:
+    st.markdown(
+        "**24.1**   For time:   - Time cap: 15 minutes",
+    )
+with cent_co:
+    st.markdown("""
+21 dumbbell snatches, arm 1 \n
+21 lateral burpees over dumbbell \n
+21 dumbbell snatches, arm 2 \n
+21 lateral burpees over dumbbell \n
+15 dumbbell snatches, arm 1 \n
+15 lateral burpees over dumbbell \n
+15 dumbbell snatches, arm 2 \n
+15 lateral burpees over dumbbell \n
+9 dumbbell snatches, arm 1 \n
+9 lateral burpees over dumbbell \n
+9 dumbbell snatches, arm 2 \n
+9 lateral burpees over dumbbell \n""")
+with last_co:
+    st.markdown("""
+♀️ 35-lb (15-kg) dumbbell
+
+♂️ 50-lb (22.5-kg) dumbbell""")
+
+st.markdown(
+    "---"
+)  # ----------------------------------------------------------------------------------------------------
+
+left_co2, cent_co2, last_co2 = st.columns(3)
+
+with left_co2:
+    st.markdown(
+        """**24.2** As many rounds and reps as possible in 20 minutes of: \n""",
+    )
+
+with cent_co2:
+    st.markdown("""
+300-meter row \n
+10 deadlifts \n
+50 double-unders \n
+""")
+with last_co2:
+    st.markdown("""
+♀️ 125 lb (56 kg)
+                
+♂️ 185 lb (83 kg)""")
+
+st.markdown(
+    "---"
+)  # ----------------------------------------------------------------------------------------------------
+
+left_co3, cent_co3, last_co3 = st.columns(3)
+
+with left_co3:
+    st.markdown(
+        """**24.3** All for time: \n""",
+    )
+
+with cent_co3:
+    st.markdown("""
+5 rounds of: \n
+10 thrusters, weight 1 \n
+10 chest-to-bar pull-ups \n
+Rest 1 minute, then: \n """)
+    st.markdown("""\n""")
+    st.markdown("""5 rounds of: \n
+7 thrusters, weight 2 \n
+7 bar muscle-ups \n
+Time cap: 15 minutes \n""")
+with last_co3:
+    st.markdown("""
+♀️ 165, 95 lb (29, 43 kg)
+                
+♂️ 95, 135 lb (43, 61 kg)""")
+
+
+====================================================================================================
+
+pages\Wods_open2025.py
+
+import streamlit as st
+
+from auth_utils import show_auth_status
+
+# CORRECTION: Déplacer en haut
+st.set_page_config(page_title="WODs Open 2026", layout="wide", page_icon="📅")
+
+show_auth_status()
+
+
+# --- Contenu de la page d'accueil (uniquement visible si connecté) ---
+st.title("Wods open2025")
+
+# Config default settings of the page.
+
+
+st.set_page_config(
+    page_title="Wods open2025",
+    layout="wide",
+    page_icon="2025",
+)
+
+left_co, cent_co, last_co = st.columns(3)
+with left_co:
+    st.markdown(
+        "**25.1**   As many rounds and reps as possible in 15 minutes of :",
+    )
+with cent_co:
+    st.markdown("""
+3 lateral burpees over the dumbbell \n
+3 dumbbell hang clean-to-overheads \n
+30-foot walking lunge (2 x 15 feet) \n
+""")
+    st.markdown("")
+    st.markdown(
+        "**After completing each round, add 3 reps to the burpees and hang clean-to-overheads.**"
+    )
+with last_co:
+    st.markdown("""
+♀️ 35-lb (15-kg) dumbbell
+
+♂️ 50-lb (22.5-kg) dumbbell""")
+
+st.markdown(
+    "---"
+)  # ----------------------------------------------------------------------------------------------------
+
+left_co2, cent_co2, last_co2 = st.columns(3)
+with left_co2:
+    st.markdown(
+        "**25.2** (22.3 repeat) For time :",
+    )
+with cent_co2:
+    st.markdown("""
+21 pull-ups\n
+42 double-unders\n
+21 thrusters (weight 1)\n
+18 chest-to-bar pull-ups\n
+36 double-unders\n
+18 thrusters (weight 2)\n
+15 bar muscle-ups\n
+30 double-unders\n
+15 thrusters (weight 3) \n
+""")
+    st.markdown("")
+    st.markdown("**Time cap: 12 minutes**")
+with last_co2:
+    st.markdown("""
+♀️ 65, 75, 85 lb (29, 34, 38 kg)
+
+♂️ 95, 115, 135 lb (43, 52, 61 kg)""")
+
+st.markdown(
+    "---"
+)  # ----------------------------------------------------------------------------------------------------
+
+left_co3, cent_co3, last_co3 = st.columns(3)
+with left_co3:
+    st.markdown(
+        "**25.3** For time :",
+    )
+with cent_co3:
+    st.markdown("""
+5 wall walks\n
+50-calorie row\n
+5 wall walks\n
+25 deadlifts\n
+5 wall walks\n
+25 cleans\n
+5 wall walks\n
+25 snatches\n
+5 wall walks\n
+50-calorie row\n
+""")
+    st.markdown("")
+    st.markdown("**Time cap: 20 minutes**")
+with last_co3:
+    st.markdown("""
+♀️ 155-lb (70-kg) deadlift, 85-lb (38-kg) clean, 65-lb (29-kg) snatch
+
+♂️ 225-lb (102-kg) deadlift, 135-lb (61-kg) clean, 95-lb (43-kg) snatch""")
+
+
+====================================================================================================
+
+pages\Wods_open2026.py
+
+import streamlit as st
+
+from auth_utils import show_auth_status
+
+# CORRECTION: Déplacer en haut
+st.set_page_config(
+    page_title="Wods open2026",
+    layout="wide",
+    page_icon="2026",
+)
+
+show_auth_status()
+
+
+# --- Contenu de la page d'accueil (uniquement visible si connecté) ---
+st.title("WODs Open 2026")
+
+st.set_page_config(page_title="WODs Open 2026", layout="wide", page_icon="📅")
+
+st.title("CrossFit Open 2026 — WODs")
+st.info(
+    "Les WODs 26.1, 26.2 et 26.3 seront publiés entre **le 26 février et le 16 mars 2026**.\n"
+    "Reviens ici chaque jeudi soir (Paris) pour découvrir le nouveau WOD !"
+)
+
+cols = st.columns(3)
+for i, wod in enumerate(["26.1", "26.2", "26.3"]):
+    with cols[i]:
+        st.subheader(f"{wod} — à venir")
+        st.caption("Description officielle publiée le jeudi concerné.")
+        st.progress(20, text="Décompte à venir")
+
+
+====================================================================================================
+
+pages\__pycache__\Authentification.cpython-312.pyc
+
+BINARY CONTENT (unlisted extension, could not decode as text)
+
+specs\feature-template.yaml
+
+feature: "Documentation Update 2026"
+description: >
+  Mise à jour purement textuelle du README pour l'année 2026.
+  Aucun changement de code Python pour le moment.
+
+tasks:
+  - id: update_readme
+    desc: "Update README branding"
+    files:
+      - path: README.md
+        instruction: |
+          Replace references to '2025' with '2026'.
+          Update the introduction to mention the new season dates (Feb 26, 2026).
+          Ensure the tone is welcoming for the new season.
+
+====================================================================================================
+
+specs\open-2026-neon-db.yaml
+
+feature: "Neon Postgres 17 — Intégration propre + modèle de scoring 2026 (bootstrap auto)"
+
+description: >
+  Intégration DB sans secret en dur et sans étape manuelle :
+  - Connexion via st.secrets (fallback os.getenv).
+  - Engine SQLAlchemy global (pool queuepool=5, pre_ping, recycle).
+  - Table 'wods' + index créés/seedés automatiquement (idempotent).
+  - Classement/Saisie_scores/Statistics uniformisés sur 'wods'.
+  - Transactions read-only côté lecture.
+
+prerequisites:
+  - "Créer un projet Neon (Postgres 17) et mettre l’URL en secret : Streamlit Cloud (secrets.toml) + GitHub (DATABASE_URL)."
+  - "Ne pas activer Neon Auth : non requis pour l’application."
+  - "Aucune commande psql à exécuter : bootstrap auto code-side."
+
+acceptance_criteria:
+  - "Connexion DB : st.secrets['database']['url'] avec fallback os.getenv('DATABASE_URL')."
+  - "Engine global : pool_size=5, max_overflow=0, pool_pre_ping=true, pool_recycle=1800."
+  - "Fonctions de session : get_session(readonly=True/False) ; lecture en read-only."
+  - "Table 'wods' présente et seedée (26.1 reps, 26.2 time cap 12', 26.3 time cap 20')."
+  - "Index : scores(user_id,wod) et users(sex,level)."
+  - "Classement/Saisie_scores/Statistics lisent type/timecap depuis 'wods'."
+  - "Saisie : normalisation temps 'MM:SS' / 'CAP:XX' (cap + XX)."
+  - "Statistics : plus aucune liste codée en dur ; percentiles/means basés sur seconds pour 'time'."
+  - "ruff/bandit/pip-audit OK sur les fichiers modifiés/ajoutés."
+
+constraints:
+  forbidden_globs: [".github/**", ".venv/**", "credentials/**", "**/*.key", "**/*.pem"]
+  allowed_roots: ["", "pages", "infra", "db", "specs"]
+
+tasks:
+
+  - id: db_core_module
+    desc: "Créer 'infra/db.py' : engine global + sessions + bootstrap auto (seed wods + index)."
+    files:
+      - path: infra/db.py
+        action: create
+        content: |
+          # infra/db.py
+          from __future__ import annotations
+
+          import os
+          from contextlib import contextmanager
+          from typing import Iterator, Optional
+
+          # Streamlit peut ne pas être dispo en contexte tests -> importer prudemment
+          try:
+              import streamlit as st  # type: ignore
+          except Exception:  # pragma: no cover
+              st = None  # type: ignore
+
+          from sqlalchemy import create_engine, text
+          from sqlalchemy.engine import Engine
+          from sqlalchemy.orm import sessionmaker, Session
+
+          _ENGINE: Optional[Engine] = None
+          _SESSION_FACTORY: Optional[sessionmaker] = None
+          _BOOTSTRAPPED: bool = False
+
+          def _db_url() -> str:
+              # 1) Streamlit secrets  2) fallback os.getenv
+              url = None
+              try:
+                  if st is not None:
+                      url = st.secrets.get("database", {}).get("url")  # type: ignore
+              except Exception:
+                  pass
+              return url or os.getenv("DATABASE_URL", "")
+
+          def get_engine() -> Engine:
+              global _ENGINE, _SESSION_FACTORY
+              if _ENGINE is None:
+                  url = _db_url()
+                  if not url:
+                      raise RuntimeError(
+                          "DATABASE_URL manquant (st.secrets['database']['url'] ou variable d'environnement)."
+                      )
+                  _ENGINE = create_engine(
+                      url,
+                      pool_size=5,
+                      max_overflow=0,
+                      pool_pre_ping=True,
+                      pool_recycle=1800,
+                      future=True,
+                  )
+                  _SESSION_FACTORY = sessionmaker(bind=_ENGINE, expire_on_commit=False, future=True)
+              return _ENGINE
+
+          @contextmanager
+          def get_session(readonly: bool = False) -> Iterator[Session]:
+              if _SESSION_FACTORY is None:
+                  get_engine()
+              assert _SESSION_FACTORY is not None
+              session = _SESSION_FACTORY()
+              try:
+                  if readonly:
+                      session.execute(text("SET TRANSACTION READ ONLY"))
+                  yield session
+                  if not readonly:
+                      session.commit()
+              except Exception:
+                  session.rollback()
+                  raise
+              finally:
+                  session.close()
+
+          def bootstrap_after_create() -> None:
+              """
+              Idempotent : insère les WODs 26.x + crée les index si absents.
+              Appelée après Base.metadata.create_all(...).
+              """
+              global _BOOTSTRAPPED
+              if _BOOTSTRAPPED:
+                  return
+              engine = get_engine()
+              with engine.begin() as conn:
+                  # Seed 'wods' (ON CONFLICT pour idempotence)
+                  conn.execute(text("""
+                      INSERT INTO wods (wod, label, type, timecap_seconds)
+                      VALUES 
+                        ('26.1', 'Open 26.1', 'reps', NULL),
+                        ('26.2', 'Open 26.2', 'time', 12*60),
+                        ('26.3', 'Open 26.3', 'time', 20*60)
+                      ON CONFLICT (wod) DO NOTHING;
+                  """))
+
+                  # Index idempotents
+                  conn.execute(text("CREATE INDEX IF NOT EXISTS idx_scores_user_wod ON scores(user_id, wod);"))
+                  conn.execute(text("CREATE INDEX IF NOT EXISTS idx_users_sex_level ON users(sex, level);"))
+              _BOOTSTRAPPED = True
+
+  - id: models_and_engine_injection
+    desc: "Adapter pages/Authentification.py : engine via infra.db, ajout modèle Wod, create_all + bootstrap."
+    files:
+      - path: pages/Authentification.py
+        action: modify
+        content_after: |
+          import streamlit as st
+          from datetime import datetime
+          from sqlalchemy import (
+              Column,
+              Integer,
+              String,
+              ForeignKey,
+              TIMESTAMP,
+              func,
+          )
+          from sqlalchemy.orm import declarative_base, relationship
+          from werkzeug.security import generate_password_hash, check_password_hash
+
+          from infra.db import get_engine, get_session, bootstrap_after_create
+
+          Base = declarative_base()
+
+          class User(Base):
+              __tablename__ = "users"
+              id = Column(Integer, primary_key=True)
+              name = Column(String(255), nullable=False)
+              email = Column(String(255), unique=True, nullable=False)
+              password = Column(String(255), nullable=False)
+              sex = Column(String(10), nullable=False)
+              birth_year = Column(Integer, nullable=False)
+              level = Column(String(10), nullable=False)
+              category = Column(String(20), nullable=False)
+              age = Column(Integer, nullable=False)
+              scores = relationship("Score", back_populates="user", cascade="all, delete")
+
+          class Score(Base):
+              __tablename__ = "scores"
+              id = Column(Integer, primary_key=True)
+              user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+              wod = Column(String(10), nullable=False)             # '26.1' etc.
+              score = Column(String(20), nullable=False)           # 'MM:SS' ou répétitions
+              created_at = Column(TIMESTAMP, server_default=func.now())
+              user = relationship("User", back_populates="scores")
+
+          class Wod(Base):
+              __tablename__ = "wods"
+              wod = Column(String(10), primary_key=True)           # '26.1'
+              label = Column(String(100), nullable=False)
+              type = Column(String(10), nullable=False)            # 'time' | 'reps'
+              timecap_seconds = Column(Integer, nullable=True)     # cap en secondes
+
+          # Création des tables puis bootstrap auto (seed + index)
+          Base.metadata.create_all(get_engine())
+          bootstrap_after_create()
+
+          def calculate_age_category(birth_year, current_year=datetime.now().year):
+              age = current_year - birth_year
+              if age <= 17:
+                  category = "Teenager"
+              elif age < 35:
+                  category = "Elite"
+              else:
+                  category = "Masters"
+              return age, category
+
+          def login():
+              if "user" not in st.session_state:
+                  st.session_state["user"] = None
+
+              if st.session_state["user"] is None:
+                  st.subheader("Login / Register")
+
+                  with st.form(key="register_form"):
+                      name = st.text_input("Full Name")
+                      email = st.text_input("Email")
+                      password = st.text_input("Password", type="password")
+                      sex = st.radio("Sex", ["Male", "Female"])
+                      birth_year = st.number_input("Year of Birth", min_value=1950, max_value=datetime.now().year)
+                      level = st.radio("Workout Level", ["Scaled", "RX"])
+                      submit_button = st.form_submit_button("Register")
+
+                      if submit_button:
+                          if not name or not email or not password or not birth_year:
+                              st.error("Please fill in all the fields.")
+                          else:
+                              age, category = calculate_age_category(birth_year)
+                              with get_session() as session:
+                                  existing_user = session.query(User).filter_by(email=email).first()
+                                  if existing_user:
+                                      st.error("Email already registered. Please login.")
+                                  else:
+                                      hashed_password = generate_password_hash(password, method="pbkdf2:sha256")
+                                      new_user = User(
+                                          name=name, email=email, password=hashed_password,
+                                          sex=sex, birth_year=birth_year, level=level,
+                                          category=category, age=age,
+                                      )
+                                      session.add(new_user)
+                                      st.session_state["user"] = {
+                                          "name": name, "email": email, "sex": sex,
+                                          "birth_year": birth_year, "level": level,
+                                          "category": category, "age": age,
+                                      }
+                                      st.success(f"Welcome {name}! You are categorized as {category} ({age} years old).")
+
+                  st.subheader("Or Login:")
+                  with st.form(key="login_form"):
+                      email_login = st.text_input("Email")
+                      password_login = st.text_input("Password", type="password")
+                      submit_button_login = st.form_submit_button("Login")
+
+                      if submit_button_login:
+                          with get_session(readonly=True) as session:
+                              user = session.query(User).filter_by(email=email_login).first()
+                              if user and check_password_hash(user.password, password_login):
+                                  st.session_state["user"] = {
+                                      "name": user.name, "email": user.email, "sex": user.sex,
+                                      "birth_year": user.birth_year, "level": user.level,
+                                      "category": user.category, "age": user.age,
+                                  }
+                                  st.success(f"Logged in as {user.name}")
+                              else:
+                                  st.error("Invalid email or password. Please try again.")
+              else:
+                  st.subheader(f"Hello {st.session_state['user']['name']}!")
+                  if st.button("Logout"):
+                      st.session_state["user"] = None
+                      st.success("Logged out successfully.")
+
+          login()
+
+          def change_password():
+              st.subheader("Change Password if you want:")
+              with get_session() as session:
+                  user = session.query(User).filter_by(email=st.session_state["user"]["email"]).first()
+                  if user:
+                      with st.form(key="change_password_form"):
+                          old_password = st.text_input("Old Password", type="password")
+                          new_password = st.text_input("New Password", type="password")
+                          confirm_password = st.text_input("Confirm New Password", type="password")
+                          submit_button = st.form_submit_button("Change Password")
+
+                          if submit_button:
+                              if not old_password or not new_password or not confirm_password:
+                                  st.error("All fields are required.")
+                              elif not check_password_hash(user.password, old_password):
+                                  st.error("Incorrect old password.")
+                              elif new_password != confirm_password:
+                                  st.error("New passwords do not match.")
+                              else:
+                                  user.password = generate_password_hash(new_password, method="pbkdf2:sha256")
+                                  st.success("Your password has been updated successfully!")
+
+          if st.session_state.get("user"):
+              change_password()
+
+  - id: classement_update
+    desc: "Adapter pages/Classement.py : get_session(readonly), lecture Wod, tri ASC pour time / DESC pour reps."
+    files:
+      - path: pages/Classement.py
+        action: modify
+        content_after: |
+          import streamlit as st
+          from infra.db import get_session
+          from pages.Authentification import Score, User, Wod
+
+          st.title("Classement des Athlètes")
+
+          sex_selected = st.selectbox("Sexe", ["Male", "Female"], index=0)
+          level_selected = st.selectbox("Niveau", ["RX", "Scaled", "Coach"], index=0)
+          wod_selected = st.selectbox("Choisissez le WOD", ["Overall", "26.1", "26.2", "26.3"])
+
+          def _score_to_seconds(score_str: str) -> int | None:
+              try:
+                  parts = list(map(int, score_str.split(":")))
+                  if len(parts) == 2:
+                      return parts[0] * 60 + parts[1]
+                  elif len(parts) == 3:
+                      return parts[0] * 3600 + parts[1] * 60 + parts[2]
+              except Exception:
+                  return None
+              return None
+
+          def _get_wod(wod: str):
+              with get_session(readonly=True) as s:
+                  return s.query(Wod).filter(Wod.wod == wod).first()
+
+          def calculer_classement(wod: str, sex: str, level: str):
+              with get_session(readonly=True) as s:
+                  rows = (
+                      s.query(User.name, User.level, User.sex, Score.score)
+                      .join(Score, User.id == Score.user_id)
+                      .filter(Score.wod == wod, User.sex == sex, User.level == level)
+                      .all()
+                  )
+
+              if not rows:
+                  return {}, {}
+
+              wod_meta = _get_wod(wod)
+              wod_type = (wod_meta.type if wod_meta else "reps")
+
+              classement, raw_scores = {}, {}
+              for name, level, sex, score in rows:
+                  raw_scores.setdefault((name, level, sex), {})[wod] = score
+                  if wod_type == "time":
+                      secs = _score_to_seconds(score)
+                      classement.setdefault((level, sex), []).append((name, secs if secs is not None else 10**9))
+                  else:
+                      try:
+                          classement.setdefault((level, sex), []).append((name, int(score)))
+                      except Exception:
+                          classement.setdefault((level, sex), []).append((name, 0))
+
+              for key in classement:
+                  if wod_type == "time":
+                      classement[key] = sorted(classement[key], key=lambda x: x[1])           # ASC
+                  else:
+                      classement[key] = sorted(classement[key], key=lambda x: x[1], reverse=True)  # DESC
+              return classement, raw_scores
+
+          if wod_selected == "Overall":
+              general_classement, scores_details = {}, {}
+              for wod in ["26.1", "26.2", "26.3"]:
+                  wod_classement, wod_scores = calculer_classement(wod, sex_selected, level_selected)
+                  for (level, sex), athletes in wod_classement.items():
+                      for i, (name, _) in enumerate(athletes):
+                          general_classement.setdefault((name, level, sex), 0)
+                          general_classement[(name, level, sex)] += i + 1
+                          scores_details.setdefault((name, level, sex), {}).update(wod_scores.get((name, level, sex), {}))
+
+              sorted_general = sorted(general_classement.items(), key=lambda x: x[1])
+              st.table({
+                  "Place": [i + 1 for i in range(len(sorted_general))],
+                  "Nom": [c[0][0] for c in sorted_general],
+                  "Niveau": [c[0][1] for c in sorted_general],
+                  "Sexe": [c[0][2] for c in sorted_general],
+                  "26.1": [scores_details[c[0]].get("26.1", "-") for c in sorted_general],
+                  "26.2": [scores_details[c[0]].get("26.2", "-") for c in sorted_general],
+                  "26.3": [scores_details[c[0]].get("26.3", "-") for c in sorted_general],
+                  "Points Totaux": [c[1] for c in sorted_general],
+              })
+          else:
+              classement, scores_details = calculer_classement(wod_selected, sex_selected, level_selected)
+              for (level, sex), athletes in classement.items():
+                  st.subheader(f"Classement {level} - {sex}")
+                  sorted_classement = [(name, scores_details[(name, level, sex)][wod_selected]) for name, _ in athletes]
+                  st.table({
+                      "Place": [i + 1 for i in range(len(sorted_classement))],
+                      "Nom": [c[0] for c in sorted_classement],
+                      "Score": [c[1] for c in sorted_classement],
+                      "Points": [i + 1 for i in range(len(sorted_classement))],
+                  })
+
+  - id: saisie_scores_update
+    desc: "Adapter pages/Saisie_scores.py : session R/W, normalisation CAP:XX (cap+XX), lecture Wod pour type/cap."
+    files:
+      - path: pages/Saisie_scores.py
+        action: modify
+        content_after: |
+          from datetime import datetime
+          import re
+          import streamlit as st
+          from infra.db import get_session
+          from pages.Authentification import Score, User, Wod
+
+          st.title("Saisie des Scores des WODs")
+
+          user = st.session_state.get("user")
+          if not user:
+              st.warning("Veuillez vous connecter pour enregistrer votre score => onglet Authentification (Barre Laterale Gauche)")
+              st.stop()
+
+          with get_session(readonly=True) as s:
+              user_db = s.query(User).filter_by(email=user["email"]).first()
+
+          wod_descriptions = {
+              "26.1": """
+          **26.1** AMRAP 15 minutes \n
+          3 lateral burpees over the dumbbell\n
+          3 dumbbell hang clean-to-overheads\n
+          30-foot walking lunge (2 x 15 feet)\n
+          **After completing each round, add 3 reps to the burpees and hang clean-to-overheads.**\n
+          ♀️ 35-lb (15-kg) dumbbell / ♂️ 50-lb (22.5-kg) dumbbell
+          """,
+              "26.2": """
+          **26.2** (22.3 repeat) For time :\n
+          21 pull-ups\n
+          42 double-unders\n
+          21 thrusters (weight 1)\n
+          18 chest-to-bar pull-ups\n
+          36 double-unders\n
+          18 thrusters (weight 2)\n
+          15 bar muscle-ups\n
+          30 double-unders\n
+          15 thrusters (weight 3) \n
+          **Time cap: 12 minutes**\n
+          ♀️ 65, 75, 85 lb (29, 34, 38 kg)  / ♂️ 95, 115, 135 lb (43, 52, 61 kg)
+          """,
+              "26.3": """
+          **26.3** For time :\n
+          5 wall walks\n
+          50-calorie row\n
+          5 wall walks\n
+          26 deadlifts\n
+          5 wall walks\n
+          26 cleans\n
+          5 wall walks\n
+          26 snatches\n
+          5 wall walks\n
+          50-calorie row\n
+          **Time cap: 20 minutes**\n
+          ♀️ 155-lb (70-kg) deadlift, 85-lb (38-kg) clean, 65-lb (29-kg) snatch  / ♂️ 225-lb (102-kg) deadlift, 135-lb (61-kg) clean, 95-lb (43-kg) snatch
+          """,
+          }
+
+          score_instructions = {
+              "26.3": """
+              🏋️ **Comment entrer votre score ?**
+              - Si vous terminez avant la limite de temps, entrez **MM:SS**.
+              - Si vous n’avez pas terminé avant le time cap :
+                - **Entrez "CAP:XX"**, où **XX = 1 seconde par répétition manquante** (ex: 12' => CAP:05 => 725 s si cap=720).
+              """,
+              "26.1": """
+          🔥 **Comment entrer votre score ?**  
+          - Ce WOD est un **AMRAP de 15 minutes**.  
+          - Entrez **le nombre total de répétitions**.
+          """,
+          }
+
+          def normalize_time_score(input_str: str, timecap_seconds: int) -> int | None:
+              if not input_str:
+                  return None
+              s = input_str.strip().upper()
+              m = re.match(r"^CAP:(\d{1,3})$", s)
+              if m:
+                  return timecap_seconds + int(m.group(1))
+              try:
+                  parts = list(map(int, s.split(":")))
+                  if len(parts) == 2:
+                      return parts[0] * 60 + parts[1]
+                  elif len(parts) == 3:
+                      return parts[0] * 3600 + parts[1] * 60 + parts[2]
+              except Exception:
+                  return None
+              return None
+
+          if user_db:
+              wod = st.selectbox("Sélectionner le WOD", ["26.1", "26.2", "26.3"])
+              st.markdown(f"### WOD {wod}")
+              st.markdown(wod_descriptions[wod])
+              st.markdown("---")
+              st.markdown(score_instructions.get(wod, ""))
+              st.markdown("---")
+
+              with get_session(readonly=True) as s:
+                  wod_meta = s.query(Wod).filter(Wod.wod == wod).first()
+                  existing_score = s.query(Score).filter_by(user_id=user_db.id, wod=wod).first()
+
+              if existing_score:
+                  st.warning(f"Score actuel pour {wod} : {existing_score.score}")
+                  modify = st.checkbox("Modifier votre score ?")
+              else:
+                  modify = True
+
+              if modify:
+                  new_score = None
+                  if wod_meta and wod_meta.type == "time":
+                      score_input = st.text_input(
+                          "Entrez votre score (format 'MM:SS' ou 'CAP:XX')",
+                          existing_score.score if existing_score else "",
+                      )
+                      seconds = normalize_time_score(score_input, wod_meta.timecap_seconds or 0)
+                      if score_input and seconds is None:
+                          st.error("Format incorrect. Utilisez 'MM:SS' ou 'CAP:XX'.")
+                      new_score = score_input if seconds is not None else None
+                  else:
+                      reps_val = st.number_input(
+                          "Entrez votre nombre de répétitions",
+                          min_value=0,
+                          step=1,
+                          value=int(existing_score.score) if (existing_score and existing_score.score.isdigit()) else 0,
+                      )
+                      new_score = str(reps_val)
+
+                  if st.button("Enregistrer" if not existing_score else "Mettre à jour"):
+                      if new_score:
+                          with get_session() as s:
+                              if existing_score:
+                                  existing_score.score = str(new_score)
+                              else:
+                                  s.add(Score(user_id=user_db.id, wod=wod, score=str(new_score)))
+                          st.success("Score enregistré avec succès !")
+          else:
+              st.warning("Utilisateur introuvable — reconnectez-vous.")
+
+  - id: statistics_update
+    desc: "Uniformiser pages/Statistics.py : lecture via get_session + jointure Wod pour typer/normaliser les scores."
+    files:
+      - path: pages/Statistics.py
+        action: modify
+        content_after: |
+          import numpy as np
+          import pandas as pd
+          import plotly.express as px
+          import streamlit as st
+
+          from infra.db import get_session
+          from pages.Authentification import Score, User, Wod
+
+          st.title("Statistiques des Scores des WODs")
+
+          def normalize_for_stats(value: str, wod_type: str, timecap: int | None) -> float | None:
+              """
+              - 'time' : renvoie des secondes (float), comprend 'MM:SS' et 'CAP:XX' (cap + XX).
+              - 'reps' : renvoie un entier (float) représentant les répétitions.
+              """
+              if wod_type == "time":
+                  if not value:
+                      return None
+                  s = value.strip().upper()
+                  if s.startswith("CAP:"):
+                      try:
+                          over = int(s.split(":")[1])
+                          return float((timecap or 0) + over)
+                      except Exception:
+                          return None
+                  try:
+                      parts = list(map(int, s.split(":")))
+                      if len(parts) == 2:
+                          return float(parts[0] * 60 + parts[1])
+                      elif len(parts) == 3:
+                          return float(parts[0] * 3600 + parts[1] * 60 + parts[2])
+                  except Exception:
+                      return None
+                  return None
+              else:
+                  try:
+                      return float(int(value))
+                  except Exception:
+                      return None
+
+          # Charger toutes les lignes nécessaires avec jointure Wod
+          with get_session(readonly=True) as s:
+              rows = (
+                  s.query(
+                      User.name, User.sex, User.level, User.category,
+                      Score.wod, Score.score, Wod.type, Wod.timecap_seconds
+                  )
+                  .join(Score, User.id == Score.user_id)
+                  .join(Wod, Wod.wod == Score.wod)
+                  .all()
+              )
+
+          if not rows:
+              st.info("Aucune donnée.")
+              st.stop()
+
+          data = pd.DataFrame(
+              rows,
+              columns=["Nom", "Sexe", "Niveau", "Catégorie", "WOD", "ScoreBrut", "Type", "CapSec"]
+          )
+          # Normaliser en valeur numérique exploitable
+          data["Score"] = data.apply(
+              lambda r: normalize_for_stats(r["ScoreBrut"], r["Type"], r["CapSec"]), axis=1
+          )
+
+          st.subheader("Statistiques par WOD")
+          # WODs disponibles depuis la table
+          wods = sorted(data["WOD"].unique().tolist())
+          wod_selected = st.selectbox("Choisissez un WOD", wods, index=0 if wods else None)
+
+          subset = data[(data["WOD"] == wod_selected)].copy()
+          if subset.empty:
+              st.info("Aucune donnée pour ce WOD.")
+              st.stop()
+
+          # Percentiles séparés H/F
+          percentiles = np.arange(0, 101, 10)
+          male = subset[subset["Sexe"] == "Male"]["Score"].dropna()
+          female = subset[subset["Sexe"] == "Female"]["Score"].dropna()
+
+          # Pour les 'time', score = secondes => percentiles inversés pour tracer des 'meilleurs = plus bas'
+          is_time = (subset["Type"].iloc[0] == "time")
+          if is_time:
+              male_percentiles = (np.percentile(male, 100 - percentiles) if not male.empty else np.zeros_like(percentiles))
+              female_percentiles = (np.percentile(female, 100 - percentiles) if not female.empty else np.zeros_like(percentiles))
+          else:
+              male_percentiles = (np.percentile(male, percentiles) if not male.empty else np.zeros_like(percentiles))
+              female_percentiles = (np.percentile(female, percentiles) if not female.empty else np.zeros_like(percentiles))
+
+          df_plot = pd.DataFrame({
+              "Percentiles": percentiles.tolist() * 2,
+              "Score": np.concatenate([male_percentiles, female_percentiles]),
+              "Sexe": ["Hommes"] * len(percentiles) + ["Femmes"] * len(percentiles),
+          })
+
+          title = f"Distribution des Scores - {wod_selected} ({'temps' if is_time else 'répétitions'})"
+          fig = px.line(
+              df_plot, x="Percentiles", y="Score", color="Sexe",
+              markers=True, title=title,
+              color_discrete_map={"Hommes": "#89b385", "Femmes": "#dcaa78"},
+          )
+          st.plotly_chart(fig)
+
+          # Statistiques complémentaires
+          if is_time:
+              st.subheader("Statistiques Temps")
+              male_mean = male.mean() if not male.empty else 0
+              female_mean = female.mean() if not female.empty else 0
+              time_cap = int(subset["CapSec"].iloc[0] or 0)
+              pct_m_before = (male < time_cap).mean() * 100 if (time_cap and not male.empty) else 0
+              pct_f_before = (female < time_cap).mean() * 100 if (time_cap and not female.empty) else 0
+
+              st.write(f"Temps moyen Hommes : {male_mean:.2f} s")
+              st.write(f"Temps moyen Femmes : {female_mean:.2f} s")
+              if time_cap:
+                  st.write(f"Hommes terminant avant cap : {pct_m_before:.2f}%")
+                  st.write(f"Femmes terminant avant cap : {pct_f_before:.2f}%")
+          else:
+              st.subheader("Statistiques Répétitions")
+              male_mean = male.mean() if not male.empty else 0
+              female_mean = female.mean() if not female.empty else 0
+              st.write(f"Répétitions moyennes Hommes : {male_mean:.0f}")
+              st.write(f"Répétitions moyennes Femmes : {female_mean:.0f}")
+
+          # Répartition des participants par sexe et niveau
+          st.subheader("Répartition des Participants par Sexe et Niveau")
+          gender_level_count = subset.groupby(["Sexe", "Niveau"]).size().reset_index(name="Nombre")
+          fig_level = px.bar(
+              gender_level_count, x="Niveau", y="Nombre", color="Sexe", barmode="group",
+              title="Répartition par sexe et niveau",
+              labels={"Niveau": "Niveau", "Nombre": "Nombre de participants"},
+              color_discrete_map={"Male": "#89b385", "Female": "#dcaa78"},
+          )
+          st.plotly_chart(fig_level)
+
+output_format: >
+  Retourner STRICTEMENT un objet JSON :
+  {"diffs":[
+    {"path":"infra/db.py","content_after":"..."},
+    {"path":"pages/Authentification.py","content_after":"..."},
+    {"path":"pages/Classement.py","content_after":"..."},
+    {"path":"pages/Saisie_scores.py","content_after":"..."},
+    {"path":"pages/Statistics.py","content_after":"..."}
+  ]}
+
+====================================================================================================
+
+tests\conftest.py
+
+# tests/conftest.py
+"""
+Configuration pytest partagée.
+"""
+import os
+import sys
+
+# Assure que la racine du projet est dans le path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Mock streamlit pour les imports qui l'utilisent au module level
+import unittest.mock as mock
+
+# Streamlit ne doit pas se lancer dans les tests
+streamlit_mock = mock.MagicMock()
+streamlit_mock.secrets = {"database": {}}
+sys.modules.setdefault("streamlit", streamlit_mock)
+
+
+====================================================================================================
+
+tests\test_e2e.py
+
+# tests/test_e2e.py
+
+import os
+import re
+import time
+
+import pytest
+from playwright.sync_api import Page, expect
+
+BASE_URL = os.getenv("APP_URL", "http://localhost:8501")
+TIMEOUT = 20_000  # ms
+
+pytestmark = pytest.mark.tryfirst
+
+# On ne définit plus d'email global pour les tests
+TEST_PASSWORD = "TestPassword2026!"
+TEST_WRONG_PASSWORD = "WrongPassword!"
+TEST_NAME = "E2E Testeur"
+
+
+def _register_user(page: Page, email: str, password: str):
+    """Helper function to register a new user, and then log out."""
+    page.goto(f"{BASE_URL}/Authentification")
+
+    register_form = page.locator('[data-testid="stForm"]').filter(has_text="S'inscrire")
+    register_form.get_by_label("Nom complet").fill(TEST_NAME)
+    register_form.get_by_label("Email").fill(email)
+    register_form.get_by_label("Mot de passe").fill(password)
+    register_form.get_by_text("Male", exact=True).click()
+    register_form.get_by_label("Année de naissance").fill("1990")
+    register_form.get_by_text("RX", exact=True).click()
+
+    register_form.get_by_role("button", name="S'inscrire").click()
+
+    # Attendre la redirection vers l'accueil après l'inscription
+    expect(page).to_have_url(re.compile(r".*/$"), timeout=10000)
+
+    # Se déconnecter pour préparer la phase de connexion du test
+    sidebar = page.locator('[data-testid="stSidebar"]')
+    sidebar.get_by_role("button", name="Se déconnecter").click()
+    expect(page).to_have_url(re.compile(r".*/Authentification$"), timeout=10000)
+
+
+# --- Fixture d'Authentification ---
+@pytest.fixture(scope="function")
+def authenticated_page(page: Page):
+    """
+    Fixture qui INSCRIT puis CONNECTE un utilisateur unique et retourne la page.
+    """
+    # Génère un utilisateur unique pour cette exécution de la fixture
+    email = f"fixture_{time.time_ns()}@crossfit-test.fr"
+
+    _register_user(page, email=email, password=TEST_PASSWORD)
+
+    login_form = page.locator('[data-testid="stForm"]').filter(has_text="Se connecter")
+    login_form.get_by_label("Email").fill(email)
+    login_form.get_by_label("Mot de passe").fill(TEST_PASSWORD)
+    login_form.get_by_role("button", name="Se connecter").click()
+
+    expect(page).to_have_url(re.compile(r".*/$"), timeout=10000)
+    return page
+
+
+# --- Tests ---
+
+
+class TestAuthFlow:
+    def test_auth_page_loads(self, page: Page):
+        """Vérifie que la page d'authentification se charge."""
+        page.goto(f"{BASE_URL}/Authentification")
+        expect(page.get_by_role("heading", name="S'inscrire")).to_be_visible()
+        expect(page.get_by_role("heading", name="Ou se connecter")).to_be_visible()
+
+    def test_login_flow_redirects_to_home(self, page: Page):
+        """Vérifie que le login réussit et redirige vers la page d'accueil."""
+        # Génère un utilisateur unique pour ce test
+        email = f"test_login_{time.time_ns()}@crossfit-test.fr"
+        _register_user(page, email=email, password=TEST_PASSWORD)
+
+        login_form = page.locator('[data-testid="stForm"]').filter(has_text="Se connecter")
+        login_form.get_by_label("Email").fill(email)
+        login_form.get_by_label("Mot de passe").fill(TEST_PASSWORD)
+        login_form.get_by_role("button", name="Se connecter").click()
+
+        expect(page).to_have_url(re.compile(r".*/$"), timeout=10000)
+        sidebar = page.locator('[data-testid="stSidebar"]')
+        expect(sidebar.get_by_text("Connecté en tant que")).to_be_visible()
+
+    def test_wrong_password_shows_error(self, page: Page):
+        """Vérifie qu'un mauvais mot de passe affiche une erreur."""
+        # Génère un utilisateur unique pour ce test
+        email = f"test_wrong_pass_{time.time_ns()}@crossfit-test.fr"
+        _register_user(page, email=email, password=TEST_PASSWORD)
+
+        login_form = page.locator('[data-testid="stForm"]').filter(has_text="Se connecter")
+        login_form.get_by_label("Email").fill(email)
+        login_form.get_by_label("Mot de passe").fill(TEST_WRONG_PASSWORD)
+        login_form.get_by_role("button", name="Se connecter").click()
+
+        expect(page.get_by_text("Email ou mot de passe incorrect.")).to_be_visible()
+        expect(page).to_have_url(re.compile(r".*/Authentification$"))
+
+    def test_logout_flow_redirects_to_auth_page(self, authenticated_page: Page):
+        """Vérifie le cycle de déconnexion depuis une page authentifiée."""
+        page = authenticated_page
+        sidebar = page.locator('[data-testid="stSidebar"]')
+        logout_btn = sidebar.get_by_role("button", name="Se déconnecter")
+        expect(logout_btn).to_be_visible()
+        logout_btn.click()
+        expect(page).to_have_url(re.compile(r".*/Authentification$"), timeout=10000)
+        expect(page.get_by_text("Ou se connecter")).to_be_visible()
+
+
+class TestPageProtection:
+    def test_home_page_requires_auth(self, page: Page):
+        """Vérifie que la page d'accueil est protégée."""
+        page.goto(BASE_URL)
+        expect(
+            page.get_by_text("Veuillez vous connecter pour accéder à cette page.")
+        ).to_be_visible()
+        expect(page.get_by_text("Bienvenue sur la page d'accueil")).not_to_be_visible()
+
+    def test_saisie_scores_page_requires_auth(self, page: Page):
+        """Vérifie qu'une autre page protégée (ex: Saisie_scores) l'est aussi."""
+        page.goto(f"{BASE_URL}/Saisie_scores")
+        expect(
+            page.get_by_text("Veuillez vous connecter pour accéder à cette page.")
+        ).to_be_visible()
+
+    def test_can_access_protected_page_when_logged_in(self, authenticated_page: Page):
+        """Vérifie qu'un utilisateur connecté peut voir le contenu protégé."""
+        page = authenticated_page
+        expect(page.get_by_text("Veuillez vous connecter")).not_to_be_visible()
+        expect(page.get_by_text("Bienvenue sur la page d'accueil")).to_be_visible()
+
+
+====================================================================================================
+
+tests\test_integration.py
+
+"""
+tests/test_integration.py
+Tests d'intégration — nécessitent une vraie base PostgreSQL.
+Configurer : export TEST_DATABASE_URL="postgresql://..."
+
+Run : pytest tests/test_integration.py -v
+"""
+import os
+import sys
+import pytest
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+# Skip tout le module si pas de DB de test configurée
+TEST_DB = os.getenv("TEST_DATABASE_URL")
+pytestmark = pytest.mark.skipif(not TEST_DB, reason="TEST_DATABASE_URL non configurée")
+
+
+@pytest.fixture(scope="module")
+def engine():
+    """Crée un engine sur la DB de test et les tables."""
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import declarative_base, sessionmaker
+
+    eng = create_engine(TEST_DB, pool_pre_ping=True, future=True)
+    yield eng
+    eng.dispose()
+
+
+@pytest.fixture(scope="module")
+def tables(engine):
+    """Crée toutes les tables dans la DB de test."""
+    # Import conditionnel pour éviter l'init Streamlit
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setenv("DATABASE_URL", TEST_DB)
+        from sqlalchemy.orm import declarative_base
+        from sqlalchemy import Column, Integer, String, ForeignKey, TIMESTAMP, func
+        from sqlalchemy.orm import relationship
+
+        Base = declarative_base()
+
+        class User(Base):
+            __tablename__ = "users"
+            id = Column(Integer, primary_key=True)
+            name = Column(String(255), nullable=False)
+            email = Column(String(255), unique=True, nullable=False)
+            password = Column(String(255), nullable=False)
+            sex = Column(String(10), nullable=False)
+            birth_year = Column(Integer, nullable=False)
+            level = Column(String(10), nullable=False)
+            category = Column(String(20), nullable=False)
+            age = Column(Integer, nullable=False)
+            scores = relationship("Score", back_populates="user", cascade="all, delete")
+
+        class Score(Base):
+            __tablename__ = "scores"
+            id = Column(Integer, primary_key=True)
+            user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+            wod = Column(String(10), nullable=False)
+            score = Column(String(20), nullable=False)
+            created_at = Column(TIMESTAMP, server_default=func.now())
+            user = relationship("User", back_populates="scores")
+
+        class Wod(Base):
+            __tablename__ = "wods"
+            wod = Column(String(10), primary_key=True)
+            label = Column(String(100), nullable=False)
+            type = Column(String(10), nullable=False)
+            timecap_seconds = Column(Integer, nullable=True)
+
+        Base.metadata.create_all(engine)
+        yield Base, User, Score, Wod
+        # Nettoyage
+        Base.metadata.drop_all(engine)
+
+
+@pytest.fixture(scope="module")
+def session_factory(engine, tables):
+    from sqlalchemy.orm import sessionmaker
+    factory = sessionmaker(bind=engine, expire_on_commit=False, future=True)
+    return factory
+
+
+@pytest.fixture(autouse=True)
+def clean_tables(engine, tables):
+    """Vide les tables avant chaque test."""
+    Base, User, Score, Wod = tables
+    from sqlalchemy.orm import sessionmaker
+    Session = sessionmaker(bind=engine)
+    with Session() as s:
+        s.query(Score).delete()
+        s.query(User).delete()
+        s.query(Wod).delete()
+        s.commit()
+    yield
+
+
+# ─────────────────────────────────────────────
+# Tests DB
+# ─────────────────────────────────────────────
+
+class TestUserCRUD:
+    def test_create_user(self, session_factory, tables):
+        _, User, _, _ = tables
+        Session = session_factory
+        with Session() as s:
+            user = User(
+                name="Test Athlete", email="test@crossfit.fr", password="hashed_pw",
+                sex="Male", birth_year=1995, level="RX", category="Elite", age=31,
+            )
+            s.add(user)
+            s.commit()
+            found = s.query(User).filter_by(email="test@crossfit.fr").first()
+            assert found is not None
+            assert found.name == "Test Athlete"
+            assert found.category == "Elite"
+
+    def test_duplicate_email_raises(self, session_factory, tables):
+        from sqlalchemy.exc import IntegrityError
+        _, User, _, _ = tables
+        Session = session_factory
+        with Session() as s:
+            s.add(User(name="A", email="dup@test.fr", password="pw",
+                       sex="Female", birth_year=1990, level="Scaled", category="Masters", age=36))
+            s.commit()
+        with pytest.raises(IntegrityError):
+            with Session() as s:
+                s.add(User(name="B", email="dup@test.fr", password="pw",
+                           sex="Male", birth_year=1985, level="RX", category="Masters", age=41))
+                s.commit()
+
+    def test_delete_user_cascades_scores(self, session_factory, tables):
+        _, User, Score, Wod = tables
+        Session = session_factory
+        with Session() as s:
+            # Créer wod
+            s.add(Wod(wod="26.1", label="Open 26.1", type="reps", timecap_seconds=None))
+            user = User(name="ToDelete", email="del@test.fr", password="pw",
+                        sex="Male", birth_year=2000, level="RX", category="Elite", age=26)
+            s.add(user)
+            s.commit()
+            s.add(Score(user_id=user.id, wod="26.1", score="150"))
+            s.commit()
+            assert s.query(Score).filter_by(user_id=user.id).count() == 1
+            s.delete(user)
+            s.commit()
+            assert s.query(Score).filter_by(user_id=user.id).count() == 0
+
+
+class TestWodSeed:
+    def test_wod_seed_idempotent(self, engine, session_factory, tables):
+        """ON CONFLICT DO NOTHING : seeder deux fois ne duplique pas."""
+        from sqlalchemy import text
+        _, _, _, Wod = tables
+        Session = session_factory
+
+        # Premier insert via ORM
+        with Session() as s:
+            s.add_all([
+                Wod(wod="26.1", label="Open 26.1", type="reps", timecap_seconds=None),
+                Wod(wod="26.2", label="Open 26.2", type="time", timecap_seconds=720),
+                Wod(wod="26.3", label="Open 26.3", type="time", timecap_seconds=1200),
+            ])
+            s.commit()
+        assert Session().query(Wod).count() == 3
+
+        # Deuxième seed via SQL brut (comme bootstrap_after_create) → ne doit pas dupliquer
+        with engine.begin() as conn:
+            conn.execute(text("""
+                INSERT INTO wods (wod, label, type, timecap_seconds)
+                VALUES
+                    ('26.1', 'Open 26.1', 'reps', NULL),
+                    ('26.2', 'Open 26.2', 'time', 720),
+                    ('26.3', 'Open 26.3', 'time', 1200)
+                ON CONFLICT (wod) DO NOTHING
+            """))
+
+        # Le count doit toujours être 3, pas 6
+        with Session() as s:
+            assert s.query(Wod).count() == 3
+
+    def test_wod_timecap_values(self, session_factory, tables):
+        _, _, _, Wod = tables
+        Session = session_factory
+        with Session() as s:
+            s.add_all([
+                Wod(wod="26.1", label="Open 26.1", type="reps", timecap_seconds=None),
+                Wod(wod="26.2", label="Open 26.2", type="time", timecap_seconds=720),
+                Wod(wod="26.3", label="Open 26.3", type="time", timecap_seconds=1200),
+            ])
+            s.commit()
+            w26_2 = s.query(Wod).filter_by(wod="26.2").first()
+            w26_3 = s.query(Wod).filter_by(wod="26.3").first()
+            assert w26_2.timecap_seconds == 720   # 12 * 60
+            assert w26_3.timecap_seconds == 1200  # 20 * 60
+            assert s.query(Wod).filter_by(wod="26.1").first().timecap_seconds is None
+
+
+class TestScoreOperations:
+    def _seed_base(self, session_factory, tables):
+        _, User, Score, Wod = tables
+        Session = session_factory
+        with Session() as s:
+            s.add_all([
+                Wod(wod="26.1", label="Open 26.1", type="reps", timecap_seconds=None),
+                Wod(wod="26.2", label="Open 26.2", type="time", timecap_seconds=720),
+            ])
+            user = User(name="Athlete A", email="a@cf.fr", password="pw",
+                        sex="Male", birth_year=1995, level="RX", category="Elite", age=31)
+            s.add(user)
+            s.commit()
+            return user.id
+
+    def test_insert_reps_score(self, session_factory, tables):
+        _, User, Score, Wod = tables
+        Session = session_factory
+        uid = self._seed_base(session_factory, tables)
+        with Session() as s:
+            s.add(Score(user_id=uid, wod="26.1", score="178"))
+            s.commit()
+            score = s.query(Score).filter_by(user_id=uid, wod="26.1").first()
+            assert score.score == "178"
+
+    def test_update_existing_score(self, session_factory, tables):
+        _, User, Score, Wod = tables
+        Session = session_factory
+        uid = self._seed_base(session_factory, tables)
+        with Session() as s:
+            s.add(Score(user_id=uid, wod="26.1", score="150"))
+            s.commit()
+        with Session() as s:
+            existing = s.query(Score).filter_by(user_id=uid, wod="26.1").first()
+            existing.score = "200"
+            s.commit()
+        with Session() as s:
+            updated = s.query(Score).filter_by(user_id=uid, wod="26.1").first()
+            assert updated.score == "200"
+            assert s.query(Score).filter_by(user_id=uid, wod="26.1").count() == 1
+
+    def test_insert_time_score(self, session_factory, tables):
+        _, User, Score, Wod = tables
+        Session = session_factory
+        uid = self._seed_base(session_factory, tables)
+        with Session() as s:
+            s.add(Score(user_id=uid, wod="26.2", score="09:45"))
+            s.commit()
+            score = s.query(Score).filter_by(user_id=uid, wod="26.2").first()
+            assert score.score == "09:45"
+
+    def test_insert_cap_score(self, session_factory, tables):
+        _, User, Score, Wod = tables
+        Session = session_factory
+        uid = self._seed_base(session_factory, tables)
+        with Session() as s:
+            s.add(Score(user_id=uid, wod="26.2", score="CAP:05"))
+            s.commit()
+            score = s.query(Score).filter_by(user_id=uid, wod="26.2").first()
+            assert score.score == "CAP:05"
+
+
+class TestClassementQuery:
+    def _seed_full(self, session_factory, tables):
+        _, User, Score, Wod = tables
+        Session = session_factory
+        with Session() as s:
+            s.add_all([
+                Wod(wod="26.1", label="Open 26.1", type="reps", timecap_seconds=None),
+                Wod(wod="26.2", label="Open 26.2", type="time", timecap_seconds=720),
+            ])
+            users = [
+                User(name="Alice", email="alice@cf.fr", password="pw", sex="Female",
+                     birth_year=1995, level="RX", category="Elite", age=31),
+                User(name="Bob", email="bob@cf.fr", password="pw", sex="Male",
+                     birth_year=1993, level="RX", category="Elite", age=33),
+                User(name="Charlie", email="charlie@cf.fr", password="pw", sex="Male",
+                     birth_year=1993, level="Scaled", category="Elite", age=33),
+            ]
+            s.add_all(users)
+            s.commit()
+            alice = s.query(User).filter_by(email="alice@cf.fr").first()
+            bob = s.query(User).filter_by(email="bob@cf.fr").first()
+            charlie = s.query(User).filter_by(email="charlie@cf.fr").first()
+            s.add_all([
+                Score(user_id=alice.id, wod="26.1", score="185"),
+                Score(user_id=bob.id, wod="26.1", score="210"),
+                Score(user_id=charlie.id, wod="26.1", score="95"),
+                Score(user_id=alice.id, wod="26.2", score="10:30"),
+                Score(user_id=bob.id, wod="26.2", score="09:15"),
+            ])
+            s.commit()
+
+    def test_classement_reps_filters_sex_level(self, session_factory, tables):
+        _, User, Score, Wod = tables
+        Session = session_factory
+        self._seed_full(session_factory, tables)
+        with Session() as s:
+            rows = (
+                s.query(User.name, Score.score)
+                .join(Score, User.id == Score.user_id)
+                .filter(Score.wod == "26.1", User.sex == "Male", User.level == "RX")
+                .all()
+            )
+        assert len(rows) == 1
+        assert rows[0][0] == "Bob"
+
+    def test_classement_reps_desc_order(self, session_factory, tables):
+        _, User, Score, _ = tables
+        Session = session_factory
+        self._seed_full(session_factory, tables)
+        with Session() as s:
+            rows = (
+                s.query(User.name, Score.score)
+                .join(Score, User.id == Score.user_id)
+                .filter(Score.wod == "26.1")
+                .all()
+            )
+        sorted_rows = sorted(rows, key=lambda r: int(r[1]), reverse=True)
+        assert sorted_rows[0][0] == "Bob"  # 210 reps
+
+    def test_no_results_returns_empty(self, session_factory, tables):
+        _, User, Score, Wod = tables
+        Session = session_factory
+        with Session() as s:
+            s.add(Wod(wod="26.3", label="Open 26.3", type="time", timecap_seconds=1200))
+            s.commit()
+        with Session() as s:
+            rows = (
+                s.query(User.name, Score.score)
+                .join(Score, User.id == Score.user_id)
+                .filter(Score.wod == "26.3")
+                .all()
+            )
+        assert rows == []
+
+
+====================================================================================================
+
+tests\test_unit.py
+
+"""
+tests/test_unit.py
+Tests unitaires purs (aucune DB, aucun Streamlit requis).
+Run : pytest tests/test_unit.py -v
+"""
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+import pytest
+from unittest.mock import MagicMock, patch
+
+# ─────────────────────────────────────────────
+# 1. Helpers isolés (pas d'import streamlit)
+# ─────────────────────────────────────────────
+
+def score_to_seconds(score_str: str):
+    """Copie locale de _score_to_seconds pour tester sans dépendances."""
+    try:
+        parts = list(map(int, score_str.split(":")))
+        if len(parts) == 2:
+            return parts[0] * 60 + parts[1]
+        elif len(parts) == 3:
+            return parts[0] * 3600 + parts[1] * 60 + parts[2]
+    except Exception:
+        return None
+    return None
+
+
+def normalize_time_score(input_str: str, timecap_seconds: int):
+    """Copie locale de normalize_time_score."""
+    import re
+    if not input_str:
+        return None
+    s = input_str.strip().upper()
+    m = re.match(r"^CAP:(\d{1,3})$", s)
+    if m:
+        return timecap_seconds + int(m.group(1))
+    try:
+        parts = list(map(int, s.split(":")))
+        if len(parts) == 2:
+            return parts[0] * 60 + parts[1]
+        elif len(parts) == 3:
+            return parts[0] * 3600 + parts[1] * 60 + parts[2]
+    except Exception:
+        return None
+    return None
+
+
+def calculate_age_category(birth_year, current_year=2026):
+    age = current_year - birth_year
+    if age <= 17:
+        category = "Teenager"
+    elif age < 35:
+        category = "Elite"
+    else:
+        category = "Masters"
+    return age, category
+
+
+def normalize_for_stats(value: str, wod_type: str, timecap):
+    if wod_type == "time":
+        if not value:
+            return None
+        s = value.strip().upper()
+        if s.startswith("CAP:"):
+            try:
+                over = int(s.split(":")[1])
+                return float((timecap or 0) + over)
+            except Exception:
+                return None
+        try:
+            parts = list(map(int, s.split(":")))
+            if len(parts) == 2:
+                return float(parts[0] * 60 + parts[1])
+            elif len(parts) == 3:
+                return float(parts[0] * 3600 + parts[1] * 60 + parts[2])
+        except Exception:
+            return None
+        return None
+    else:
+        try:
+            return float(int(value))
+        except Exception:
+            return None
+
+
+# ─────────────────────────────────────────────
+# 2. Tests score_to_seconds
+# ─────────────────────────────────────────────
+
+class TestScoreToSeconds:
+    def test_mm_ss_format(self):
+        assert score_to_seconds("10:30") == 630
+
+    def test_hh_mm_ss_format(self):
+        assert score_to_seconds("1:00:00") == 3600
+
+    def test_zero_minutes(self):
+        assert score_to_seconds("00:45") == 45
+
+    def test_invalid_returns_none(self):
+        assert score_to_seconds("abc") is None
+
+    def test_empty_string_returns_none(self):
+        assert score_to_seconds("") is None
+
+    def test_single_value_returns_none(self):
+        assert score_to_seconds("120") is None  # pas de ':'
+
+    def test_exact_timecap_12min(self):
+        assert score_to_seconds("12:00") == 720
+
+    def test_exact_timecap_20min(self):
+        assert score_to_seconds("20:00") == 1200
+
+
+# ─────────────────────────────────────────────
+# 3. Tests normalize_time_score (saisie scores)
+# ─────────────────────────────────────────────
+
+class TestNormalizeTimeScore:
+    def test_cap_format_adds_to_timecap(self):
+        # CAP:05 avec timecap 720s → 725s
+        assert normalize_time_score("CAP:05", 720) == 725
+
+    def test_cap_zero(self):
+        assert normalize_time_score("CAP:000", 720) == 720
+
+    def test_cap_lowercase(self):
+        assert normalize_time_score("cap:10", 1200) == 1210
+
+    def test_normal_time_mm_ss(self):
+        assert normalize_time_score("09:45", 720) == 585
+
+    def test_normal_time_hh_mm_ss(self):
+        assert normalize_time_score("00:12:00", 720) == 720
+
+    def test_empty_returns_none(self):
+        assert normalize_time_score("", 720) is None
+
+    def test_invalid_format_returns_none(self):
+        assert normalize_time_score("abc", 720) is None
+
+    def test_cap_with_leading_zeros(self):
+        assert normalize_time_score("CAP:001", 1200) == 1201
+
+    def test_whitespace_handled(self):
+        assert normalize_time_score("  09:30  ", 720) == 570
+
+
+# ─────────────────────────────────────────────
+# 4. Tests calculate_age_category
+# ─────────────────────────────────────────────
+
+class TestCalculateAgeCategory:
+    def test_teenager(self):
+        age, cat = calculate_age_category(2012, 2026)  # 14 ans
+        assert age == 14
+        assert cat == "Teenager"
+
+    def test_teenager_boundary(self):
+        age, cat = calculate_age_category(2009, 2026)  # 17 ans
+        assert age == 17
+        assert cat == "Teenager"
+
+    def test_elite_lower_boundary(self):
+        age, cat = calculate_age_category(2008, 2026)  # 18 ans
+        assert age == 18
+        assert cat == "Elite"
+
+    def test_elite_upper_boundary(self):
+        age, cat = calculate_age_category(1992, 2026)  # 34 ans
+        assert age == 34
+        assert cat == "Elite"
+
+    def test_masters_boundary(self):
+        age, cat = calculate_age_category(1991, 2026)  # 35 ans
+        assert age == 35
+        assert cat == "Masters"
+
+    def test_masters_senior(self):
+        age, cat = calculate_age_category(1960, 2026)
+        assert age == 66
+        assert cat == "Masters"
+
+
+# ─────────────────────────────────────────────
+# 5. Tests normalize_for_stats
+# ─────────────────────────────────────────────
+
+class TestNormalizeForStats:
+    # --- type 'time' ---
+    def test_time_mm_ss(self):
+        assert normalize_for_stats("10:30", "time", 720) == 630.0
+
+    def test_time_cap_format(self):
+        assert normalize_for_stats("CAP:05", "time", 720) == 725.0
+
+    def test_time_empty_returns_none(self):
+        assert normalize_for_stats("", "time", 720) is None
+
+    def test_time_invalid_returns_none(self):
+        assert normalize_for_stats("INVALID", "time", 720) is None
+
+    def test_time_no_timecap_cap_format(self):
+        assert normalize_for_stats("CAP:10", "time", None) == 10.0  # 0 + 10
+
+    # --- type 'reps' ---
+    def test_reps_integer_string(self):
+        assert normalize_for_stats("150", "reps", None) == 150.0
+
+    def test_reps_zero(self):
+        assert normalize_for_stats("0", "reps", None) == 0.0
+
+    def test_reps_invalid_returns_none(self):
+        assert normalize_for_stats("abc", "reps", None) is None
+
+    def test_reps_float_string_invalid(self):
+        # Les reps doivent être des entiers
+        assert normalize_for_stats("12.5", "reps", None) is None
+
+
+# ─────────────────────────────────────────────
+# 6. Tests logique du classement (tri)
+# ─────────────────────────────────────────────
+
+class TestClassementSort:
+    """Vérifie que la logique de tri est correcte : ASC pour time, DESC pour reps."""
+
+    def _sort_classement(self, athletes, wod_type):
+        if wod_type == "time":
+            return sorted(athletes, key=lambda x: x[1])
+        else:
+            return sorted(athletes, key=lambda x: x[1], reverse=True)
+
+    def test_time_sort_ascending(self):
+        athletes = [("Alice", 650), ("Bob", 590), ("Charlie", 720)]
+        result = self._sort_classement(athletes, "time")
+        assert result[0][0] == "Bob"    # meilleur temps = plus petit
+        assert result[-1][0] == "Charlie"
+
+    def test_reps_sort_descending(self):
+        athletes = [("Alice", 180), ("Bob", 250), ("Charlie", 90)]
+        result = self._sort_classement(athletes, "reps")
+        assert result[0][0] == "Bob"    # plus de reps = meilleur
+        assert result[-1][0] == "Charlie"
+
+    def test_time_tie_stable(self):
+        athletes = [("Alice", 600), ("Bob", 600)]
+        result = self._sort_classement(athletes, "time")
+        assert len(result) == 2  # pas de crash en cas d'égalité
+
+    def test_overall_points_cumulation(self):
+        """Vérifie la logique d'accumulation des points Overall."""
+        # Simule 2 WODs, 2 athlètes
+        # WOD1 : Alice 1er (1pt), Bob 2e (2pts)
+        # WOD2 : Bob 1er (1pt), Alice 2e (2pts)
+        general = {}
+        wod1_results = [("Alice", 590), ("Bob", 650)]
+        wod2_results = [("Bob", 420), ("Alice", 500)]
+
+        for i, (name, _) in enumerate(wod1_results):
+            general[name] = general.get(name, 0) + (i + 1)
+        for i, (name, _) in enumerate(wod2_results):
+            general[name] = general.get(name, 0) + (i + 1)
+
+        sorted_gen = sorted(general.items(), key=lambda x: x[1])
+        # Alice: 1+2=3pts, Bob: 2+1=3pts → égalité
+        assert sorted_gen[0][1] == sorted_gen[1][1] == 3
+
+
+====================================================================================================
+
+tests\__pycache__\conftest.cpython-312-pytest-9.0.2.pyc
+
+BINARY CONTENT (unlisted extension, could not decode as text)
+
+tests\__pycache__\test_e2e.cpython-312-pytest-9.0.2.pyc
+
+BINARY CONTENT (unlisted extension, could not decode as text)
+
+tests\__pycache__\test_integration.cpython-312-pytest-9.0.2.pyc
+
+BINARY CONTENT (unlisted extension, could not decode as text)
+
+tests\__pycache__\test_unit.cpython-312-pytest-9.0.2.pyc
+
+BINARY CONTENT (unlisted extension, could not decode as text)
+
+__pycache__\auth_utils.cpython-312.pyc
+
+BINARY CONTENT (unlisted extension, could not decode as text)
+

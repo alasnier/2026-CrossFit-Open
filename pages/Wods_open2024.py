@@ -12,18 +12,8 @@ st.set_page_config(
 show_auth_status()
 
 
-# --- Contenu de la page d'accueil (uniquement visible si connecté) ---
-st.title("Wods open2024")
-
-# Config default settings of the page.
-
-
-st.set_page_config(
-    page_title="Wods open2024",
-    layout="wide",
-    page_icon="2024",
-)
-# st.sidebar.header("2024 Open Wods")
+st.title("2024 Open WODs")
+st.sidebar.header("2024 Open WODs")
 
 left_co, cent_co, last_co = st.columns(3)
 with left_co:

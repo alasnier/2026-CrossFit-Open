@@ -3,22 +3,17 @@ import streamlit as st
 from auth_utils import show_auth_status
 
 # CORRECTION: Déplacer en haut
-st.set_page_config(page_title="WODs Open 2026", layout="wide", page_icon="📅")
-
-show_auth_status()
-
-
-# --- Contenu de la page d'accueil (uniquement visible si connecté) ---
-st.title("Wods open2025")
-
-# Config default settings of the page.
-
-
 st.set_page_config(
     page_title="Wods open2025",
     layout="wide",
     page_icon="2025",
 )
+
+show_auth_status()
+
+
+st.title("2025 Open WODs")
+st.sidebar.header("2025 Open WODs")
 
 left_co, cent_co, last_co = st.columns(3)
 with left_co:

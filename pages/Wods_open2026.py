@@ -4,16 +4,16 @@ from auth_utils import show_auth_status
 
 # CORRECTION: Déplacer en haut
 st.set_page_config(
-    page_title="Wods open2026",
+    page_title="Wods open2024",
     layout="wide",
-    page_icon="2026",
+    page_icon="2024",
 )
 
 show_auth_status()
 
 
-# --- Contenu de la page d'accueil (uniquement visible si connecté) ---
-st.title("WODs Open 2026")
+st.sidebar.header("2026 Open WODs")
+st.title("2026 Open WODs")
 
 st.set_page_config(page_title="WODs Open 2026", layout="wide", page_icon="📅")
 
