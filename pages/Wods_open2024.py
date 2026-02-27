@@ -2,7 +2,6 @@ import streamlit as st
 
 from auth_utils import show_auth_status
 
-# CORRECTION: Déplacer en haut
 st.set_page_config(
     page_title="2024 Open WODs",
     layout="wide",

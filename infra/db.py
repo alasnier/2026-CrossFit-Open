@@ -29,6 +29,7 @@ def _db_url() -> str:
         pass
     return url or os.getenv("DATABASE_URL", "")
 
+
 def get_engine() -> Engine:
     global _ENGINE, _SESSION_FACTORY
     if _ENGINE is None:
@@ -83,7 +84,7 @@ def bootstrap_after_create() -> None:
             text("""
             INSERT INTO wods (wod, label, type, timecap_seconds)
             VALUES 
-                ('26.1', 'Open 26.1', 'reps', NULL),
+                ('26.1', 'Open 26.1', 'time', 720),
                 ('26.2', 'Open 26.2', 'time', 720),
                 ('26.3', 'Open 26.3', 'time', 1200)
             ON CONFLICT (wod) DO NOTHING;
