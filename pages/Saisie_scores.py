@@ -27,41 +27,29 @@ if not user_id:
 
 wod_descriptions = {
     "26.1": """
-**26.1** AMRAP 15 minutes
-- 3 lateral burpees over the dumbbell
-- 3 dumbbell hang clean-to-overheads
-- 30-foot walking lunge (2 x 15 feet)
-
-**After completing each round, add 3 reps to the burpees and hang clean-to-overheads.**
-
-♀️ 35-lb (15-kg) dumbbell / ♂️ 50-lb (22.5-kg) dumbbell
-""",
-    "26.2": """
-**26.2** (22.3 repeat) For time :
-- 21 pull-ups / 42 double-unders / 21 thrusters (weight 1)
-- 18 chest-to-bar pull-ups / 36 double-unders / 18 thrusters (weight 2)
-- 15 bar muscle-ups / 30 double-unders / 15 thrusters (weight 3)
+**26.1** For time :
+- 20 wall-ball shots / 18 box jump-overs
+- 30 wall-ball shots / 18 box jump-overs
+- 40 wall-ball shots / 18 medicine-ball box step-overs
+- 66 wall-ball shots / 18 medicine-ball box step-overs
+- 40 wall-ball shots / 18 box jump-overs
+- 30 wall-ball shots / 18 box jump-overs
+- 20 wall-ball shots
 
 **Time cap: 12 minutes**
 
-♀️ 65, 75, 85 lb (29, 34, 38 kg) / ♂️ 95, 115, 135 lb (43, 52, 61 kg)
+♀ 14-lb (6-kg) ball, 9-ft target, 20-in box / ♂ 20-lb (9-kg) ball, 10-ft target, 24-in box
+""",
+    "26.2": """
+---
 """,
     "26.3": """
-**26.3** For time :
-- 5 wall walks / 50-calorie row
-- 5 wall walks / 25 deadlifts
-- 5 wall walks / 25 cleans
-- 5 wall walks / 25 snatches
-- 5 wall walks / 50-calorie row
-
-**Time cap: 20 minutes**
-
-♀️ 155-lb deadlift, 85-lb clean, 65-lb snatch / ♂️ 225-lb deadlift, 135-lb clean, 95-lb snatch
+---
 """,
 }
 
 score_instructions = {
-    "26.1": "🔥 **Score = nombre total de répétitions** (AMRAP 15 min).",
+    "26.1": "⏱️ **Score = temps MM:SS** si fini avant le cap, sinon **CAP:XX** où XX = reps manquantes (Total WOD : 354 reps).",
     "26.2": "⏱️ **Score = temps MM:SS** si fini avant le cap, sinon **CAP:XX** où XX = reps manquantes.",
     "26.3": "⏱️ **Score = temps MM:SS** si fini avant le cap, sinon **CAP:XX** où XX = reps manquantes.",
 }
@@ -101,6 +89,11 @@ with get_session(readonly=True) as s:
     existing_score_str = existing.score if existing else None
     existing_score_id = existing.id if existing else None
 
+# Surcharge de sécurité : Le 26.1 est un WOD For Time avec un cap de 12 min (720s)
+if wod == "26.1":
+    wod_type = "time"
+    timecap = 720
+
 if existing_score_str:
     st.warning(f"✅ Score actuel pour {wod} : **{existing_score_str}**")
     modify = st.checkbox("Modifier votre score ?")
@@ -118,11 +111,15 @@ if modify:
         if score_input:
             seconds = normalize_time_score(score_input, timecap or 0)
             if seconds is None:
-                st.error("❌ Format incorrect. Utilisez 'MM:SS' (ex: 09:45) ou 'CAP:XX' (ex: CAP:05).")
+                st.error(
+                    "❌ Format incorrect. Utilisez 'MM:SS' (ex: 09:45) ou 'CAP:XX' (ex: CAP:05)."
+                )
             else:
                 new_score = score_input.strip().upper()
     else:
-        default_val = int(existing_score_str) if (existing_score_str and existing_score_str.isdigit()) else 0
+        default_val = (
+            int(existing_score_str) if (existing_score_str and existing_score_str.isdigit()) else 0
+        )
         reps_val = st.number_input(
             "Entrez votre nombre de répétitions",
             min_value=0,
@@ -136,7 +133,6 @@ if modify:
         if new_score:
             with get_session() as s:
                 if existing_score_id:
-                    # FIX : recharger l'objet dans la nouvelle session, pas l'ancien
                     score_obj = s.query(Score).filter_by(id=existing_score_id).first()
                     if score_obj:
                         score_obj.score = new_score
