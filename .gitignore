@@ -1,4 +1,7 @@
 obtain_gemini_models_list.py
+reset_password.py
+.streamlit
+
 # Python
 __pycache__/
 *.pyc

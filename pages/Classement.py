@@ -1,4 +1,5 @@
-# pages/Classement.py
+import re
+
 import streamlit as st
 
 from auth_utils import show_auth_status
@@ -10,36 +11,32 @@ show_auth_status()
 st.title("Classement des Athlètes")
 
 sex_selected = st.selectbox("Sexe", ["Male", "Female"], index=0)
-level_selected = st.selectbox("Niveau", ["RX", "Scaled"], index=0)
+level_selected = st.selectbox("Niveau", ["RX", "Scaled", "Coach"], index=0)
 wod_selected = st.selectbox("Choisissez le WOD", ["Overall", "26.1", "26.2", "26.3"])
 
 
-def _score_to_seconds(score_str: str) -> int | None:
+def _score_to_seconds(score_str: str, timecap_seconds: int) -> int | None:
+    if not score_str:
+        return None
+    s = score_str.strip().upper()
+
+    # 1. Gestion du CAP:XX
+    m = re.match(r"^CAP:(\d{1,3})$", s)
+    if m:
+        return timecap_seconds + int(m.group(1))
+
+    # 2. Gestion du format MM:SS
     try:
-        s = score_str.strip().upper()
-        if s.startswith("CAP:"):
-            return None  # géré séparément
         parts = list(map(int, s.split(":")))
         if len(parts) == 2:
             return parts[0] * 60 + parts[1]
         elif len(parts) == 3:
             return parts[0] * 3600 + parts[1] * 60 + parts[2]
+        elif len(parts) == 1:
+            return int(parts[0])
     except Exception:
         return None
     return None
-
-
-def _score_sort_key(score_str: str, timecap: int | None) -> int:
-    """Convertit n'importe quel score en entier comparable (secondes ou reps)."""
-    s = score_str.strip().upper()
-    if s.startswith("CAP:"):
-        try:
-            over = int(s.split(":")[1])
-            return (timecap or 0) + over
-        except Exception:
-            return 10**9
-    secs = _score_to_seconds(score_str)
-    return secs if secs is not None else 10**9
 
 
 def _get_wod(wod: str):
@@ -61,14 +58,25 @@ def calculer_classement(wod: str, sex: str, level: str):
 
     wod_meta = _get_wod(wod)
     wod_type = wod_meta.type if wod_meta else "reps"
-    timecap = wod_meta.timecap_seconds if wod_meta else None
+    timecap = wod_meta.timecap_seconds if wod_meta else 0
+
+    # ── SURCHARGE INDISPENSABLE POUR LE 26.1 ──
+    # Contourne la définition 'reps' présente dans la BDD
+    if wod == "26.1":
+        wod_type = "time"
+        timecap = 720
+    # ──────────────────────────────────────────
 
     classement, raw_scores = {}, {}
     for name, u_level, u_sex, score in rows:
         raw_scores.setdefault((name, u_level, u_sex), {})[wod] = score
+
         if wod_type == "time":
-            sort_val = _score_sort_key(score, timecap)
-            classement.setdefault((u_level, u_sex), []).append((name, sort_val))
+            secs = _score_to_seconds(score, timecap)
+            # Pénalité max (10^9) si le score est mal formaté
+            classement.setdefault((u_level, u_sex), []).append(
+                (name, secs if secs is not None else 10**9)
+            )
         else:
             try:
                 classement.setdefault((u_level, u_sex), []).append((name, int(score)))
@@ -77,9 +85,12 @@ def calculer_classement(wod: str, sex: str, level: str):
 
     for key in classement:
         if wod_type == "time":
-            classement[key] = sorted(classement[key], key=lambda x: x[1])        # ASC
+            # ASC : Plus petit temps en premier
+            classement[key] = sorted(classement[key], key=lambda x: x[1])
         else:
-            classement[key] = sorted(classement[key], key=lambda x: x[1], reverse=True)  # DESC
+            # DESC : Plus grand nombre de reps en premier
+            classement[key] = sorted(classement[key], key=lambda x: x[1], reverse=True)
+
     return classement, raw_scores
 
 
@@ -95,38 +106,31 @@ if wod_selected == "Overall":
                     wod_scores.get((name, level, sex), {})
                 )
 
-    if not general_classement:
-        st.info("Aucun score enregistré pour le moment.")
-    else:
-        sorted_general = sorted(general_classement.items(), key=lambda x: x[1])
-        st.table(
-            {
-                "Place": [i + 1 for i in range(len(sorted_general))],
-                "Nom": [c[0][0] for c in sorted_general],
-                "Niveau": [c[0][1] for c in sorted_general],
-                "Sexe": [c[0][2] for c in sorted_general],
-                "26.1": [scores_details[c[0]].get("26.1", "-") for c in sorted_general],
-                "26.2": [scores_details[c[0]].get("26.2", "-") for c in sorted_general],
-                "26.3": [scores_details[c[0]].get("26.3", "-") for c in sorted_general],
-                "Points Totaux": [c[1] for c in sorted_general],
-            }
-        )
+    sorted_general = sorted(general_classement.items(), key=lambda x: x[1])
+    st.table(
+        {
+            "Place": [i + 1 for i in range(len(sorted_general))],
+            "Nom": [c[0][0] for c in sorted_general],
+            "Niveau": [c[0][1] for c in sorted_general],
+            "Sexe": [c[0][2] for c in sorted_general],
+            "26.1": [scores_details[c[0]].get("26.1", "-") for c in sorted_general],
+            "26.2": [scores_details[c[0]].get("26.2", "-") for c in sorted_general],
+            "26.3": [scores_details[c[0]].get("26.3", "-") for c in sorted_general],
+            "Points Totaux": [c[1] for c in sorted_general],
+        }
+    )
 else:
     classement, scores_details = calculer_classement(wod_selected, sex_selected, level_selected)
-    if not classement:
-        st.info(f"Aucun score enregistré pour le WOD {wod_selected}.")
-    else:
-        for (level, sex), athletes in classement.items():
-            st.subheader(f"Classement {level} - {sex}")
-            sorted_classement = [
-                (name, scores_details[(name, level, sex)].get(wod_selected, "-"))
-                for name, _ in athletes
-            ]
-            st.table(
-                {
-                    "Place": [i + 1 for i in range(len(sorted_classement))],
-                    "Nom": [c[0] for c in sorted_classement],
-                    "Score": [c[1] for c in sorted_classement],
-                    "Points": [i + 1 for i in range(len(sorted_classement))],
-                }
-            )
+    for (level, sex), athletes in classement.items():
+        st.subheader(f"Classement {level} - {sex}")
+        sorted_classement = [
+            (name, scores_details[(name, level, sex)][wod_selected]) for name, _ in athletes
+        ]
+        st.table(
+            {
+                "Place": [i + 1 for i in range(len(sorted_classement))],
+                "Nom": [c[0] for c in sorted_classement],
+                "Score": [c[1] for c in sorted_classement],
+                "Points": [i + 1 for i in range(len(sorted_classement))],
+            }
+        )
