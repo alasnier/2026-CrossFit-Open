@@ -20,12 +20,10 @@ def _score_to_seconds(score_str: str, timecap_seconds: int) -> int | None:
         return None
     s = score_str.strip().upper()
 
-    # 1. Gestion du CAP:XX
     m = re.match(r"^CAP:(\d{1,3})$", s)
     if m:
         return timecap_seconds + int(m.group(1))
 
-    # 2. Gestion du format MM:SS
     try:
         parts = list(map(int, s.split(":")))
         if len(parts) == 2:
@@ -60,20 +58,12 @@ def calculer_classement(wod: str, sex: str, level: str):
     wod_type = wod_meta.type if wod_meta else "reps"
     timecap = wod_meta.timecap_seconds if wod_meta else 0
 
-    # ── SURCHARGE INDISPENSABLE POUR LE 26.1 ──
-    # Contourne la définition 'reps' présente dans la BDD
-    if wod == "26.1":
-        wod_type = "time"
-        timecap = 720
-    # ──────────────────────────────────────────
-
     classement, raw_scores = {}, {}
     for name, u_level, u_sex, score in rows:
         raw_scores.setdefault((name, u_level, u_sex), {})[wod] = score
 
         if wod_type == "time":
             secs = _score_to_seconds(score, timecap)
-            # Pénalité max (10^9) si le score est mal formaté
             classement.setdefault((u_level, u_sex), []).append(
                 (name, secs if secs is not None else 10**9)
             )
@@ -85,10 +75,8 @@ def calculer_classement(wod: str, sex: str, level: str):
 
     for key in classement:
         if wod_type == "time":
-            # ASC : Plus petit temps en premier
             classement[key] = sorted(classement[key], key=lambda x: x[1])
         else:
-            # DESC : Plus grand nombre de reps en premier
             classement[key] = sorted(classement[key], key=lambda x: x[1], reverse=True)
 
     return classement, raw_scores
