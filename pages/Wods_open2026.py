@@ -49,10 +49,35 @@ with col2:
 
 st.markdown("---")
 
-# ── WODs 26.2 & 26.3 ────────────────────────────────────────────────────────
-cols = st.columns(2)
-for i, wod in enumerate(["26.2", "26.3"]):
-    with cols[i]:
-        st.subheader(f"{wod} — à venir")
-        st.caption("Description officielle publiée le jeudi concerné.")
-        st.progress(0, text="Décompte à venir")
+# ── WOD 26.2 ────────────────────────────────────────────────────────────────
+st.header("WOD 26.2")
+st.markdown("**For time:**")
+
+col3, col4 = st.columns([2, 1])
+with col3:
+    st.markdown("""
+    - 80-foot dumbbell overhead walking lunge
+    - 20 alternating dumbbell snatches
+    - 20 pull-ups
+    - 80-foot dumbbell overhead walking lunge
+    - 20 alternating dumbbell snatches
+    - 20 chest-to-bar pull-ups
+    - 80-foot dumbbell overhead walking lunge
+    - 20 alternating dumbbell snatches
+    - 20 muscle-ups
+    """)
+with col4:
+    st.markdown("""
+    **Time cap:** 15 minutes
+    
+    **Poids :**
+    - ♀ 35-lb (15-kg) dumbbell
+    - ♂ 50-lb (22.5-kg) dumbbell
+    """)
+
+st.markdown("---")
+
+# ── WOD 26.3 ────────────────────────────────────────────────────────────────
+st.subheader("26.3 — à venir")
+st.caption("Description officielle publiée le jeudi concerné.")
+st.progress(0, text="Décompte à venir")

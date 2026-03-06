@@ -1,4 +1,3 @@
-# pages/Saisie_scores.py
 import re
 
 import streamlit as st
@@ -37,19 +36,37 @@ wod_descriptions = {
 - 20 wall-ball shots
 
 **Time cap: 12 minutes**
-
-♀ 14-lb (6-kg) ball, 9-ft target, 20-in box / ♂ 20-lb (9-kg) ball, 10-ft target, 24-in box
 """,
     "26.2": """
----
+**26.2** For time:
+- 80-foot dumbbell overhead walking lunge
+- 20 alternating dumbbell snatches
+- 20 pull-ups
+- 80-foot dumbbell overhead walking lunge
+- 20 alternating dumbbell snatches
+- 20 chest-to-bar pull-ups
+- 80-foot dumbbell overhead walking lunge
+- 20 alternating dumbbell snatches
+- 20 muscle-ups
+
+**Time cap: 15 minutes**
+
+♀ 35-lb (15-kg) dumbbell / ♂ 50-lb (22.5-kg) dumbbell
 """,
     "26.3": """
----
+**26.3** For time :
+- 5 wall walks / 50-calorie row
+- 5 wall walks / 25 deadlifts
+- 5 wall walks / 25 cleans
+- 5 wall walks / 25 snatches
+- 5 wall walks / 50-calorie row
+
+**Time cap: 20 minutes**
 """,
 }
 
 score_instructions = {
-    "26.1": "⏱️ **Score = temps MM:SS** si fini avant le cap, sinon **CAP:XX** où XX = reps manquantes (Total WOD : 354 reps).",
+    "26.1": "🔒 **Saisie clôturée.**",
     "26.2": "⏱️ **Score = temps MM:SS** si fini avant le cap, sinon **CAP:XX** où XX = reps manquantes.",
     "26.3": "⏱️ **Score = temps MM:SS** si fini avant le cap, sinon **CAP:XX** où XX = reps manquantes.",
 }
@@ -73,14 +90,15 @@ def normalize_time_score(input_str: str, timecap_seconds: int) -> int | None:
     return None
 
 
-wod = st.selectbox("Sélectionner le WOD", ["26.1", "26.2", "26.3"])
+# Par défaut sur l'index 1 (26.2)
+wod = st.selectbox("Sélectionner le WOD", ["26.1", "26.2", "26.3"], index=1)
 st.markdown(f"### WOD {wod}")
 st.markdown(wod_descriptions[wod])
 st.markdown("---")
 st.markdown(score_instructions.get(wod, ""))
 st.markdown("---")
 
-# Charger les métadonnées du WOD et le score existant
+# Lecture propre et dynamique depuis la DB
 with get_session(readonly=True) as s:
     wod_meta = s.query(Wod).filter(Wod.wod == wod).first()
     wod_type = wod_meta.type if wod_meta else "reps"
@@ -89,16 +107,20 @@ with get_session(readonly=True) as s:
     existing_score_str = existing.score if existing else None
     existing_score_id = existing.id if existing else None
 
-# Surcharge de sécurité : Le 26.1 est un WOD For Time avec un cap de 12 min (720s)
-if wod == "26.1":
-    wod_type = "time"
-    timecap = 720
-
+# ── LOGIQUE DE VERROUILLAGE ──
 if existing_score_str:
-    st.warning(f"✅ Score actuel pour {wod} : **{existing_score_str}**")
-    modify = st.checkbox("Modifier votre score ?")
+    st.success(f"✅ Score actuel pour {wod} : **{existing_score_str}**")
+    if wod == "26.1":
+        st.error("🔒 La saisie et la modification pour le WOD 26.1 sont clôturées.")
+        modify = False
+    else:
+        modify = st.checkbox("Modifier votre score ?")
 else:
-    modify = True
+    if wod == "26.1":
+        st.error("🔒 La saisie pour le WOD 26.1 est clôturée.")
+        modify = False
+    else:
+        modify = True
 
 if modify:
     new_score = None
