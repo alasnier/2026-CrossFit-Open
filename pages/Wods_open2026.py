@@ -78,6 +78,35 @@ with col4:
 st.markdown("---")
 
 # ── WOD 26.3 ────────────────────────────────────────────────────────────────
-st.subheader("26.3 — à venir")
-st.caption("Description officielle publiée le jeudi concerné.")
-st.progress(0, text="Décompte à venir")
+st.header("WOD 26.3")
+st.markdown("**For time:**")
+
+col5, col6 = st.columns([2, 1])
+with col5:
+    st.markdown("""
+    **2 rounds of:**
+    - 12 burpees over the bar
+    - 12 cleans, weight 1
+    - 12 burpees over the bar
+    - 12 thrusters, weight 1
+    
+    **2 rounds of:**
+    - 12 burpees over the bar
+    - 12 cleans, weight 2
+    - 12 burpees over the bar
+    - 12 thrusters, weight 2
+    
+    **2 rounds of:**
+    - 12 burpees over the bar
+    - 12 cleans, weight 3
+    - 12 burpees over the bar
+    - 12 thrusters, weight 3
+    """)
+with col6:
+    st.markdown("""
+    **Time cap:** 16 minutes
+    
+    **Poids :**
+    - ♀ 65, 75, 85 lb (29, 34, 38 kg)
+    - ♂ 95, 115, 135 lb (43, 52, 61 kg)
+    """)

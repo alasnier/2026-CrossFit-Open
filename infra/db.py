@@ -86,11 +86,10 @@ def bootstrap_after_create() -> None:
             VALUES 
                 ('26.1', 'Open 26.1', 'time', 720),
                 ('26.2', 'Open 26.2', 'time', 900),
-                ('26.3', 'Open 26.3', 'time', 1200)
+                ('26.3', 'Open 26.3', 'time', 960)
             ON CONFLICT (wod) DO NOTHING;
         """)
-        )
-        # Index idempotents
+        )  # Index idempotents
         conn.execute(
             text("CREATE INDEX IF NOT EXISTS idx_scores_user_wod ON scores(user_id, wod);")
         )

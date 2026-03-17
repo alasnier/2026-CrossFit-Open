@@ -50,25 +50,23 @@ wod_descriptions = {
 - 20 muscle-ups
 
 **Time cap: 15 minutes**
-
-♀ 35-lb (15-kg) dumbbell / ♂ 50-lb (22.5-kg) dumbbell
 """,
     "26.3": """
-**26.3** For time :
-- 5 wall walks / 50-calorie row
-- 5 wall walks / 25 deadlifts
-- 5 wall walks / 25 cleans
-- 5 wall walks / 25 snatches
-- 5 wall walks / 50-calorie row
+**26.3** For time:
+- 2 rounds of: 12 burpees over the bar, 12 cleans (weight 1), 12 burpees over the bar, 12 thrusters (weight 1)
+- 2 rounds of: 12 burpees over the bar, 12 cleans (weight 2), 12 burpees over the bar, 12 thrusters (weight 2)
+- 2 rounds of: 12 burpees over the bar, 12 cleans (weight 3), 12 burpees over the bar, 12 thrusters (weight 3)
 
-**Time cap: 20 minutes**
+**Time cap: 16 minutes**
+
+♀ 65, 75, 85 lb (29, 34, 38 kg) / ♂ 95, 115, 135 lb (43, 52, 61 kg)
 """,
 }
 
 score_instructions = {
     "26.1": "🔒 **Saisie clôturée.**",
-    "26.2": "⏱️ **Score = temps MM:SS** si fini avant le cap, sinon **CAP:XX** où XX = reps manquantes.",
-    "26.3": "⏱️ **Score = temps MM:SS** si fini avant le cap, sinon **CAP:XX** où XX = reps manquantes.",
+    "26.2": "🔒 **Saisie clôturée.**",
+    "26.3": "⏱️ **Score = temps MM:SS** si fini avant le cap, sinon **CAP:XX** où XX = reps manquantes (Total : 288 reps).",
 }
 
 
@@ -90,15 +88,14 @@ def normalize_time_score(input_str: str, timecap_seconds: int) -> int | None:
     return None
 
 
-# Par défaut sur l'index 1 (26.2)
-wod = st.selectbox("Sélectionner le WOD", ["26.1", "26.2", "26.3"], index=1)
+# Par défaut sur l'index 2 (26.3)
+wod = st.selectbox("Sélectionner le WOD", ["26.1", "26.2", "26.3"], index=2)
 st.markdown(f"### WOD {wod}")
 st.markdown(wod_descriptions[wod])
 st.markdown("---")
 st.markdown(score_instructions.get(wod, ""))
 st.markdown("---")
 
-# Lecture propre et dynamique depuis la DB
 with get_session(readonly=True) as s:
     wod_meta = s.query(Wod).filter(Wod.wod == wod).first()
     wod_type = wod_meta.type if wod_meta else "reps"
@@ -110,14 +107,14 @@ with get_session(readonly=True) as s:
 # ── LOGIQUE DE VERROUILLAGE ──
 if existing_score_str:
     st.success(f"✅ Score actuel pour {wod} : **{existing_score_str}**")
-    if wod == "26.1":
-        st.error("🔒 La saisie et la modification pour le WOD 26.1 sont clôturées.")
+    if wod in ["26.1", "26.2"]:
+        st.error(f"🔒 La saisie et la modification pour le WOD {wod} sont clôturées.")
         modify = False
     else:
         modify = st.checkbox("Modifier votre score ?")
 else:
-    if wod == "26.1":
-        st.error("🔒 La saisie pour le WOD 26.1 est clôturée.")
+    if wod in ["26.1", "26.2"]:
+        st.error(f"🔒 La saisie pour le WOD {wod} est clôturée.")
         modify = False
     else:
         modify = True
